@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Virtual environments
+.venv/
+venv/
+
+# Build outputs
+dist/
+/src-tauri/target/
+/src-tauri/gen/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Tauri local data and generated files
+/src-tauri/Cargo.lock
+
+# Superpowers scratch space
+.superpowers/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.egg-info/
