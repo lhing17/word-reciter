@@ -1,0 +1,85 @@
+<h2>Word Reciter — 线框图 v1</h2>
+<p class="subtitle">三个核心页面：首页、分类模式、背诵模式</p>
+
+<div class="section">
+  <h3>1. 首页 / 词库选择</h3>
+  <div class="mockup">
+    <div class="mockup-header">Word Reciter</div>
+    <div class="mockup-body" style="padding:24px">
+      <div style="display:flex;gap:16px;margin-bottom:24px">
+        <div style="flex:1;padding:16px;border:1px solid #ccc;border-radius:8px">
+          <div class="label">词库</div>
+          <h3>朗文 9000 词</h3>
+          <p>9,411 个单词</p>
+          <button class="mock-button">已选择</button>
+        </div>
+        <div style="flex:1;padding:16px;border:1px dashed #ccc;border-radius:8px;color:#999">
+          <h3>+ 导入新词库</h3>
+          <p>从 .txt 文件导入</p>
+        </div>
+      </div>
+      <div class="label">学习统计</div>
+      <div style="display:flex;gap:12px;margin:12px 0 24px">
+        <div style="flex:1;text-align:center;padding:12px;background:#f5f5f5;border-radius:6px"><strong>生词</strong><br>0</div>
+        <div style="flex:1;text-align:center;padding:12px;background:#f5f5f5;border-radius:6px"><strong>半熟词</strong><br>0</div>
+        <div style="flex:1;text-align:center;padding:12px;background:#f5f5f5;border-radius:6px"><strong>熟词</strong><br>0</div>
+        <div style="flex:1;text-align:center;padding:12px;background:#f5f5f5;border-radius:6px"><strong>总计</strong><br>9,411</div>
+      </div>
+      <div style="display:flex;gap:16px">
+        <button class="mock-button" style="flex:1">开始分类模式</button>
+        <button class="mock-button" style="flex:1">开始背诵模式</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>2. 分类模式</h3>
+  <div class="mockup">
+    <div class="mockup-header">分类模式 — 43 / 9,411</div>
+    <div class="mockup-body" style="padding:40px 24px;text-align:center">
+      <div style="font-size:48px;font-weight:bold;margin-bottom:16px">abandon</div>
+      <div style="color:#666;margin-bottom:40px">按 1/2/3 或点击下方按钮标记</div>
+      <div style="display:flex;gap:16px;justify-content:center">
+        <button class="mock-button" style="background:#ffebee;color:#c62828">生词 (1)</button>
+        <button class="mock-button" style="background:#fff3e0;color:#ef6c00">半熟词 (2)</button>
+        <button class="mock-button" style="background:#e8f5e9;color:#2e7d32">熟词 (3)</button>
+      </div>
+      <div style="margin-top:24px">
+        <a href="#" style="color:#999">跳过</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>3. 背诵模式</h3>
+  <div class="mockup">
+    <div class="mockup-header">背诵模式 — 第 12 题 / 正确率 75%</div>
+    <div class="mockup-body" style="padding:40px 24px;text-align:center">
+      <div class="label">看英文选中文</div>
+      <div style="font-size:36px;font-weight:bold;margin:24px 0">necessary</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:480px;margin:0 auto">
+        <button class="mock-button">必要的</button>
+        <button class="mock-button">自然的</button>
+        <button class="mock-button">附近的</button>
+        <button class="mock-button">民族的</button>
+      </div>
+    </div>
+  </div>
+  <div class="mockup" style="margin-top:16px">
+    <div class="mockup-header">答对后：重新标记熟悉度</div>
+    <div class="mockup-body" style="padding:24px;text-align:center">
+      <p style="margin-bottom:16px">正确答案：<strong>必要的</strong></p>
+      <div style="display:flex;gap:16px;justify-content:center">
+        <button class="mock-button" style="background:#ffebee;color:#c62828">仍为生词</button>
+        <button class="mock-button" style="background:#fff3e0;color:#ef6c00">半熟词</button>
+        <button class="mock-button" style="background:#e8f5e9;color:#2e7d32">熟词（不再出现）</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <p>如果布局ok，在终端回复“ok”；如果有想调整的地方，直接告诉我。</p>
+</div>
