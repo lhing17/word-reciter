@@ -500,7 +500,7 @@ fn main() {
 
 ```rust
 #[tauri::command]
-pub async fn import_word_list(_path: String, _source: String) -> Result<(), String> {
+pub async fn import_word_list(_source: String) -> Result<(), String> {
     // Task 3 将实现具体逻辑
     Ok(())
 }
@@ -679,7 +679,8 @@ git commit -m "feat(db): add SQLite migrations for words, word_states, study_log
 **Interfaces:**
 - 后端使用 `rusqlite::Connection` 直接操作 SQLite。
 - `services::word_import::import_from_txt(conn: &rusqlite::Connection, path: &str, source: &str) -> Result<ImportResult, String>`
-- Tauri command `import_word_list(path: String, source: String, app: AppHandle) -> Result<ImportResult, String>`，其中 `ImportResult` 含 `imported`, `skipped` 字段。
+- Tauri command `import_word_list(source: String, app: AppHandle) -> Result<ImportResult, String>`，其中 `ImportResult` 含 `imported`, `skipped` 字段。
+- 出于安全考虑，前端不再传入文件路径；命令内部从已知安全的资源目录解析默认词库 `references/unique_words_with_chinese.txt`，`source` 仅作为数据来源标识存入数据库。
 - 输入文件格式：`word|中文释义`，每行一个；若没有 `|`，则 `meaning` 为空。
 - 命令中通过 `db::db_path(&app)?` 获取数据库文件路径，打开 `rusqlite::Connection`，调用导入服务。
 
@@ -698,8 +699,8 @@ git commit -m "feat(db): add SQLite migrations for words, word_states, study_log
 修改 `src-tauri/src/commands.rs`：
 
 - 定义 `ImportResult` 返回类型（可复用 services 中的结构体或重新导出）。
-- 实现 `#[tauri::command] pub async fn import_word_list(path: String, source: String, app: AppHandle) -> Result<ImportResult, String>`。
-- 在命令内部打开 `rusqlite::Connection`，调用 `word_import::import_from_txt`。
+- 实现 `#[tauri::command] pub async fn import_word_list(source: String, app: AppHandle) -> Result<ImportResult, String>`。
+- 在命令内部从安全的资源目录解析默认词库路径，打开 `rusqlite::Connection`，调用 `word_import::import_from_txt`。
 
 修改 `src-tauri/src/lib.rs`：
 
@@ -717,8 +718,8 @@ export interface ImportResult {
   skipped: number
 }
 
-export async function importWordList(path: string, source: string): Promise<ImportResult> {
-  return invoke('import_word_list', { path, source })
+export async function importWordList(source: string): Promise<ImportResult> {
+  return invoke('import_word_list', { source })
 }
 ```
 
@@ -742,7 +743,7 @@ import { importWordList, type ImportResult } from '../api/tauri'
 const result = ref<ImportResult | null>(null)
 
 async function importDefault() {
-  result.value = await importWordList('references/unique_words_with_chinese.txt', 'unique_words_with_chinese.txt')
+  result.value = await importWordList('unique_words_with_chinese.txt')
 }
 </script>
 ```
@@ -969,8 +970,8 @@ export interface StudyResultPayload {
 import { invoke } from '@tauri-apps/api/core'
 import type { Stats, StudyResultPayload, Quiz, ImportResult } from '../types'
 
-export async function importWordList(path: string, source: string): Promise<ImportResult> {
-  return invoke('import_word_list', { path, source })
+export async function importWordList(source: string): Promise<ImportResult> {
+  return invoke('import_word_list', { source })
 }
 
 export async function getStats(): Promise<Stats> {
@@ -996,7 +997,7 @@ export const useWordsStore = defineStore('words', () => {
   }
 
   async function ensureDefaultWordListImported() {
-    await importWordList('references/unique_words_with_chinese.txt', 'unique_words_with_chinese.txt')
+    await importWordList('unique_words_with_chinese.txt')
     await loadStats()
   }
 
@@ -1580,8 +1581,8 @@ pub async fn submit_study_result(
 import { invoke } from '@tauri-apps/api/core'
 import type { Familiarity, Quiz, Stats, StudyResultPayload, Word, ImportResult } from '../types'
 
-export async function importWordList(path: string, source: string): Promise<ImportResult> {
-  return invoke('import_word_list', { path, source })
+export async function importWordList(source: string): Promise<ImportResult> {
+  return invoke('import_word_list', { source })
 }
 
 export async function getStats(): Promise<Stats> {
