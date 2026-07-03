@@ -2,6 +2,7 @@ use tauri::{command, AppHandle};
 
 use crate::db;
 use crate::db::word_states::Stats;
+use crate::db::words::Word;
 use crate::services::word_import::{self, ImportResult};
 
 /// Imports a word list from a text file into the application's SQLite database.
@@ -27,6 +28,35 @@ pub async fn get_stats(app: AppHandle) -> Result<Stats, String> {
     tokio::task::spawn_blocking(move || {
         let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
         db::word_states::get_stats(&conn)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[command]
+pub async fn get_next_unmarked_word(
+    offset: i64,
+    app: AppHandle,
+) -> Result<Option<Word>, String> {
+    let path = crate::db::db_path(&app)?;
+    tokio::task::spawn_blocking(move || {
+        let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+        db::words::get_next_unmarked(&conn, offset)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[command]
+pub async fn mark_word(
+    word: String,
+    familiarity: String,
+    app: AppHandle,
+) -> Result<(), String> {
+    let path = crate::db::db_path(&app)?;
+    tokio::task::spawn_blocking(move || {
+        let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+        db::word_states::mark_word(&conn, &word, &familiarity)
     })
     .await
     .map_err(|e| e.to_string())?

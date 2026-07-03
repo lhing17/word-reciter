@@ -17,6 +17,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::import_word_list,
             commands::get_stats,
+            commands::get_next_unmarked_word,
+            commands::mark_word,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
