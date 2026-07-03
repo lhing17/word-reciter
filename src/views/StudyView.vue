@@ -5,7 +5,7 @@
       <span>背诵模式 — 第 {{ studyStore.sessionTotal }} 题 / 正确率 {{ accuracy }}</span>
     </div>
 
-    <div v-if="studyStore.currentQuiz" class="quiz-area">
+    <div v-if="!studyStore.loading && studyStore.currentQuiz" class="quiz-area">
       <ChoiceQuiz
         v-if="studyStore.currentQuiz.type === 'choice'"
         :key="studyStore.currentQuiz.word"
@@ -32,14 +32,17 @@
       <StudyResultPanel
         v-if="studyStore.answered && studyStore.currentQuiz"
         :answer="correctAnswer"
-        :disabled="!studyStore.answered || studyStore.submitting"
+        :disabled="studyStore.submitting"
         @finish="onFinish"
       />
       <div v-if="studyStore.error" class="error" style="margin-top: 16px; text-align: center;">{{ studyStore.error }}</div>
     </div>
 
     <div v-else-if="studyStore.loading" class="empty">加载中……</div>
-    <div v-else-if="studyStore.error" class="empty error">{{ studyStore.error }}</div>
+    <div v-else-if="studyStore.error" class="empty error">
+      <div>{{ studyStore.error }}</div>
+      <button class="retry-btn" @click="studyStore.loadQuiz()">重试</button>
+    </div>
     <div v-else class="empty">
       当前没有可背诵的单词。请先标记一些生词/半熟词，或检查词库是否包含中文释义。
     </div>
@@ -94,4 +97,6 @@ onMounted(() => {
 .header { display: flex; justify-content: space-between; margin-bottom: 32px; }
 .empty { text-align: center; padding: 80px 0; font-size: 18px; color: #666; }
 .empty.error { color: #c62828; }
+.retry-btn { margin-top: 16px; padding: 8px 24px; border: 1px solid #c62828; border-radius: 6px; background: #c62828; color: #fff; cursor: pointer; }
+.retry-btn:hover { background: #a71d1d; }
 </style>

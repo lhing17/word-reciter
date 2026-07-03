@@ -3,8 +3,8 @@
     <div class="word">{{ quiz.word }}</div>
     <div class="options">
       <button
-        v-for="opt in quiz.options"
-        :key="opt"
+        v-for="(opt, index) in quiz.options"
+        :key="index + '-' + opt"
         class="option-btn"
         :class="buttonClass(opt)"
         :disabled="answered"
@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import type { ChoiceQuiz } from '../types'
 
 const props = defineProps<{
@@ -29,6 +29,10 @@ const emit = defineEmits<{
 }>()
 
 const selected = defineModel<string | null>('selected', { default: null })
+
+watch(() => props.quiz, () => {
+  selected.value = null
+})
 
 function select(opt: string) {
   selected.value = opt

@@ -17,6 +17,7 @@ export const useStudyStore = defineStore('study', () => {
     answered.value = false
     result.value = null
     error.value = null
+    currentQuiz.value = null
     loading.value = true
     try {
       currentQuiz.value = await generateQuiz()
@@ -29,6 +30,7 @@ export const useStudyStore = defineStore('study', () => {
   }
 
   function recordAnswer(isCorrect: boolean) {
+    if (answered.value) return
     answered.value = true
     result.value = isCorrect ? 'correct' : 'wrong'
     sessionTotal.value += 1
