@@ -7,12 +7,16 @@ pub fn log_study(
 ) -> Result<(), String> {
     const VALID_QUIZ_TYPES: [&str; 3] = ["choice", "fill", "recall"];
     const VALID_RESULTS: [&str; 3] = ["correct", "wrong", "skipped"];
+    const VALID_FAMILIARITIES: [&str; 3] = ["unknown", "half", "known"];
 
     if !VALID_QUIZ_TYPES.contains(&quiz_type) {
         return Err(format!("invalid quiz_type: {}", quiz_type));
     }
     if !VALID_RESULTS.contains(&result) {
         return Err(format!("invalid result: {}", result));
+    }
+    if !VALID_FAMILIARITIES.contains(&familiarity_after) {
+        return Err(format!("invalid familiarity_after: {}", familiarity_after));
     }
 
     let word_id: i64 = conn

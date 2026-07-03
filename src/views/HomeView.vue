@@ -24,8 +24,10 @@
     </div>
 
     <div class="actions">
-      <router-link class="btn" to="/marking">开始分类模式</router-link>
-      <router-link class="btn" to="/study">开始背诵模式</router-link>
+      <button v-if="isImporting" class="btn" disabled>词库导入中…</button>
+      <router-link v-else class="btn" to="/marking">开始分类模式</router-link>
+      <button v-if="isImporting" class="btn" disabled>词库导入中…</button>
+      <router-link v-else class="btn" to="/study">开始背诵模式</router-link>
     </div>
 
     <p class="hint">当前词库：朗文 9000 词</p>
@@ -38,12 +40,16 @@ import { useWordsStore } from '../stores/words'
 
 const wordsStore = useWordsStore()
 const error = ref<string | null>(null)
+const isImporting = ref(false)
 
 onMounted(async () => {
+  isImporting.value = true
   try {
     await wordsStore.ensureDefaultWordListImported()
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
+  } finally {
+    isImporting.value = false
   }
 })
 </script>
@@ -91,6 +97,10 @@ onMounted(async () => {
   border-radius: 6px;
   border: none;
   cursor: pointer;
+}
+.btn:disabled {
+  background: #90caf9;
+  cursor: not-allowed;
 }
 .hint {
   color: #999;

@@ -46,7 +46,12 @@ async function loadNext() {
   isLoading.value = true
   error.value = null
   try {
-    currentWord.value = await getNextUnmarkedWord(offset.value)
+    let word = await getNextUnmarkedWord(offset.value)
+    if (!word && offset.value > 0) {
+      offset.value = 0
+      word = await getNextUnmarkedWord(0)
+    }
+    currentWord.value = word
   } catch (e) {
     error.value = e instanceof Error ? e.message : '加载单词失败'
   } finally {
@@ -84,8 +89,13 @@ function onKeyDown(e: KeyboardEvent) {
   if (e.key === 'Escape') router.push('/')
 }
 
-onMounted(() => {
-  loadNext()
+onMounted(async () => {
+  try {
+    await wordsStore.ensureDefaultWordListImported()
+    await loadNext()
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '初始化失败'
+  }
   window.addEventListener('keydown', onKeyDown)
 })
 

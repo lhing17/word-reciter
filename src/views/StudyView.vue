@@ -88,8 +88,13 @@ async function onFinish(familiarity: Familiarity) {
   }
 }
 
-onMounted(() => {
-  studyStore.loadQuiz()
+onMounted(async () => {
+  try {
+    await wordsStore.ensureDefaultWordListImported()
+    await studyStore.loadQuiz()
+  } catch (e) {
+    studyStore.error = e instanceof Error ? e.message : '初始化失败'
+  }
 })
 </script>
 

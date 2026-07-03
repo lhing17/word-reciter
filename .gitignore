@@ -30,7 +30,6 @@ pnpm-debug.log*
 *.sw?
 
 # Tauri local data and generated files
-/src-tauri/Cargo.lock
 
 # Superpowers scratch space
 .superpowers/
