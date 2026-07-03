@@ -8,6 +8,7 @@
     <div v-if="studyStore.currentQuiz" class="quiz-area">
       <ChoiceQuiz
         v-if="studyStore.currentQuiz.type === 'choice'"
+        :key="studyStore.currentQuiz.word"
         :quiz="studyStore.currentQuiz"
         v-model:selected="selectedOption"
         :answered="studyStore.answered"
@@ -15,13 +16,16 @@
       />
       <FillQuiz
         v-else-if="studyStore.currentQuiz.type === 'fill'"
+        :key="studyStore.currentQuiz.word"
         :quiz="studyStore.currentQuiz"
         :answered="studyStore.answered"
         @answer="onAnswer"
       />
       <RecallQuiz
         v-else
+        :key="studyStore.currentQuiz.word"
         :quiz="studyStore.currentQuiz"
+        :answered="studyStore.answered"
         @answer="onAnswer"
       />
 
@@ -32,6 +36,8 @@
       />
     </div>
 
+    <div v-else-if="studyStore.loading" class="empty">加载中……</div>
+    <div v-else-if="studyStore.error" class="empty error">{{ studyStore.error }}</div>
     <div v-else class="empty">
       当前没有可背诵的单词。请先标记一些生词/半熟词，或检查词库是否包含中文释义。
     </div>
@@ -83,4 +89,5 @@ onMounted(() => {
 .study-view { padding: 24px; max-width: 700px; margin: 0 auto; }
 .header { display: flex; justify-content: space-between; margin-bottom: 32px; }
 .empty { text-align: center; padding: 80px 0; font-size: 18px; color: #666; }
+.empty.error { color: #c62828; }
 </style>

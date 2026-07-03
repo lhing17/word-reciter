@@ -9,11 +9,22 @@ export const useStudyStore = defineStore('study', () => {
   const result = ref<ResultType | null>(null)
   const sessionTotal = ref(0)
   const sessionCorrect = ref(0)
+  const loading = ref(false)
+  const error = ref<string | null>(null)
 
   async function loadQuiz() {
     answered.value = false
     result.value = null
-    currentQuiz.value = await generateQuiz()
+    error.value = null
+    loading.value = true
+    try {
+      currentQuiz.value = await generateQuiz()
+    } catch (e) {
+      currentQuiz.value = null
+      error.value = e instanceof Error ? e.message : '加载题目失败，请稍后重试。'
+    } finally {
+      loading.value = false
+    }
   }
 
   function recordAnswer(isCorrect: boolean) {
@@ -40,6 +51,8 @@ export const useStudyStore = defineStore('study', () => {
     result,
     sessionTotal,
     sessionCorrect,
+    loading,
+    error,
     loadQuiz,
     recordAnswer,
     finishQuiz,

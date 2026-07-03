@@ -4,7 +4,7 @@
     <button v-if="!showAnswer" class="show-btn" @click="showAnswer = true">显示答案</button>
     <div v-else class="answer">
       <div>{{ quiz.answer }}</div>
-      <div class="self-eval">
+      <div v-if="!answered" class="self-eval">
         <span>是否答对？</span>
         <button @click="emit('answer', true)">对了</button>
         <button @click="emit('answer', false)">错了</button>
@@ -17,7 +17,7 @@
 import { ref } from 'vue'
 import type { RecallQuiz } from '../types'
 
-defineProps<{ quiz: RecallQuiz }>()
+defineProps<{ quiz: RecallQuiz; answered: boolean }>()
 const emit = defineEmits<{ (e: 'answer', correct: boolean): void }>()
 
 const showAnswer = ref(false)

@@ -21,7 +21,7 @@ const emit = defineEmits<{ (e: 'answer', correct: boolean): void }>()
 const input = ref('')
 
 function normalize(s: string) {
-  return s.trim().toLowerCase().replace(/[.,!?]$/, '')
+  return s.trim().toLowerCase().replace(/[.,!?]+$/, '')
 }
 
 function submit() {
