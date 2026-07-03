@@ -2,19 +2,19 @@
   <div class="marking-view">
     <div class="header">
       <router-link to="/">← 返回首页</router-link>
-      <span>分类模式 — {{ sessionProgress }} / {{ stats.total }}</span>
+      <span>分类模式 — {{ sessionProgress }} / {{ totalInSession }}</span>
     </div>
 
     <div v-if="error" class="error">
       {{ error }}
-      <button class="retry" @click="loadNext">重试</button>
+      <button class="retry" @click="loadQueue">重试</button>
     </div>
 
     <div v-if="currentWord" class="card">
       <div class="word">{{ currentWord.word }}</div>
       <div class="hint">按 1/2/3 或点击下方按钮标记</div>
       <MarkButtons :disabled="isProcessing || isLoading" @mark="onMark" />
-      <button class="skip" :disabled="isProcessing || isLoading" @click="nextWord">跳过</button>
+      <button class="skip" :disabled="isProcessing || isLoading" @click="skipWord">跳过</button>
     </div>
 
     <div v-else-if="isInitializing || isLoading" class="empty">加载中……</div>
@@ -27,33 +27,28 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { getNextUnmarkedWord, markWord } from '../api/tauri'
+import { getMarkingQueue, markWord } from '../api/tauri'
 import { useWordsStore } from '../stores/words'
 import MarkButtons from '../components/MarkButtons.vue'
 import type { Familiarity, Word } from '../types'
 
 const router = useRouter()
 const wordsStore = useWordsStore()
-const currentWord = ref<Word | null>(null)
-const offset = ref(0)
+const queue = ref<Word[]>([])
+const currentWord = computed(() => queue.value[0] ?? null)
 const isProcessing = ref(false)
 const isLoading = ref(false)
 const isInitializing = ref(true)
 const error = ref<string | null>(null)
 
-const stats = computed(() => wordsStore.stats)
 const sessionProgress = ref(0)
+const totalInSession = computed(() => queue.value.length + sessionProgress.value)
 
-async function loadNext() {
+async function loadQueue() {
   isLoading.value = true
   error.value = null
   try {
-    let word = await getNextUnmarkedWord(offset.value)
-    if (!word && offset.value > 0) {
-      offset.value = 0
-      word = await getNextUnmarkedWord(0)
-    }
-    currentWord.value = word
+    queue.value = await getMarkingQueue()
   } catch (e) {
     error.value = e instanceof Error ? e.message : '加载单词失败'
   } finally {
@@ -61,11 +56,12 @@ async function loadNext() {
   }
 }
 
-async function nextWord() {
-  if (isProcessing.value || isLoading.value) return
-  sessionProgress.value += 1
-  offset.value += 1
-  await loadNext()
+function skipWord() {
+  if (!currentWord.value || isProcessing.value || isLoading.value) return
+  const skipped = queue.value.shift()
+  if (skipped) {
+    queue.value.push(skipped)
+  }
 }
 
 async function onMark(familiarity: Familiarity) {
@@ -75,9 +71,8 @@ async function onMark(familiarity: Familiarity) {
   try {
     await markWord(currentWord.value.word, familiarity)
     await wordsStore.loadStats()
+    queue.value.shift()
     sessionProgress.value += 1
-    offset.value = 0
-    await loadNext()
   } catch (e) {
     error.value = e instanceof Error ? e.message : '标记失败'
   } finally {
@@ -96,7 +91,7 @@ function onKeyDown(e: KeyboardEvent) {
 onMounted(async () => {
   try {
     await wordsStore.ensureDefaultWordListImported()
-    await loadNext()
+    await loadQueue()
   } catch (e) {
     error.value = e instanceof Error ? e.message : '初始化失败'
   } finally {

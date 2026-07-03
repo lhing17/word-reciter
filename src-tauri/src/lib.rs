@@ -59,7 +59,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::import_word_list,
             commands::get_stats,
-            commands::get_next_unmarked_word,
+            commands::get_marking_queue,
             commands::mark_word,
             commands::generate_quiz,
             commands::submit_study_result,

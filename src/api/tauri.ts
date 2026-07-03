@@ -9,8 +9,8 @@ export async function getStats(): Promise<Stats> {
   return invoke('get_stats')
 }
 
-export async function getNextUnmarkedWord(offset: number): Promise<Word | null> {
-  return invoke('get_next_unmarked_word', { offset })
+export async function getMarkingQueue(): Promise<Word[]> {
+  return invoke('get_marking_queue')
 }
 
 export async function markWord(word: string, familiarity: Familiarity): Promise<void> {

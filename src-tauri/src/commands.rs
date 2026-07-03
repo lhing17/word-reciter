@@ -8,6 +8,7 @@ use crate::db::words::Word;
 use crate::services::study::{self, Quiz};
 use crate::services::word_import::{self, ImportResult};
 use crate::AppState;
+use std::sync::Arc;
 
 /// Name of the bundled default word list. The backend never trusts the frontend
 /// path and always resolves this file from known-safe locations.
@@ -58,7 +59,7 @@ fn resolve_word_list_path(path: &str, app: &AppHandle) -> Result<PathBuf, String
 
 /// Returns an error if the database has not finished initializing or if it
 /// failed to initialize.
-fn check_db_ready(state: &State<'_, AppState>) -> Result<(), String> {
+fn check_db_ready(state: &State<'_, Arc<AppState>>) -> Result<(), String> {
     if !state.is_complete() {
         return Err("Database is still initializing".into());
     }
@@ -76,7 +77,7 @@ fn check_db_ready(state: &State<'_, AppState>) -> Result<(), String> {
 pub async fn import_word_list(
     source: String,
     app: AppHandle,
-    state: State<'_, AppState>,
+    state: State<'_, Arc<AppState>>,
 ) -> Result<ImportResult, String> {
     check_db_ready(&state)?;
     let db_path = db::db_path(&app)?;
@@ -100,7 +101,7 @@ pub async fn import_word_list(
 }
 
 #[command]
-pub async fn get_stats(app: AppHandle, state: State<'_, AppState>) -> Result<Stats, String> {
+pub async fn get_stats(app: AppHandle, state: State<'_, Arc<AppState>>) -> Result<Stats, String> {
     check_db_ready(&state)?;
     let path = crate::db::db_path(&app)?;
     tokio::task::spawn_blocking(move || {
@@ -112,19 +113,15 @@ pub async fn get_stats(app: AppHandle, state: State<'_, AppState>) -> Result<Sta
 }
 
 #[command]
-pub async fn get_next_unmarked_word(
-    offset: i64,
+pub async fn get_marking_queue(
     app: AppHandle,
-    state: State<'_, AppState>,
-) -> Result<Option<Word>, String> {
+    state: State<'_, Arc<AppState>>,
+) -> Result<Vec<Word>, String> {
     check_db_ready(&state)?;
-    if offset < 0 {
-        return Err("offset cannot be negative".into());
-    }
     let path = crate::db::db_path(&app)?;
     tokio::task::spawn_blocking(move || {
         let conn = db::open_connection(&path).map_err(|e| e.to_string())?;
-        db::words::get_next_unmarked(&conn, offset)
+        db::words::get_unmarked_queue(&conn)
     })
     .await
     .map_err(|e| e.to_string())?
@@ -135,7 +132,7 @@ pub async fn mark_word(
     word: String,
     familiarity: String,
     app: AppHandle,
-    state: State<'_, AppState>,
+    state: State<'_, Arc<AppState>>,
 ) -> Result<(), String> {
     check_db_ready(&state)?;
     let path = crate::db::db_path(&app)?;
@@ -158,7 +155,7 @@ pub struct StudyResultPayload {
 #[command]
 pub async fn generate_quiz(
     app: AppHandle,
-    state: State<'_, AppState>,
+    state: State<'_, Arc<AppState>>,
 ) -> Result<Option<Quiz>, String> {
     check_db_ready(&state)?;
     let path = crate::db::db_path(&app)?;
@@ -175,7 +172,7 @@ pub async fn generate_quiz(
 pub async fn submit_study_result(
     payload: StudyResultPayload,
     app: AppHandle,
-    state: State<'_, AppState>,
+    state: State<'_, Arc<AppState>>,
 ) -> Result<(), String> {
     check_db_ready(&state)?;
     let path = crate::db::db_path(&app)?;

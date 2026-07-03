@@ -1,4 +1,3 @@
-use rusqlite::OptionalExtension;
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
@@ -9,7 +8,7 @@ pub struct Word {
     pub meaning: Option<String>,
 }
 
-pub fn get_next_unmarked(conn: &rusqlite::Connection, offset: i64) -> Result<Option<Word>, String> {
+pub fn get_unmarked_queue(conn: &rusqlite::Connection) -> Result<Vec<Word>, String> {
     let mut stmt = conn
         .prepare(
             r#"
@@ -17,14 +16,13 @@ pub fn get_next_unmarked(conn: &rusqlite::Connection, offset: i64) -> Result<Opt
             FROM words w
             LEFT JOIN word_states ws ON w.id = ws.word_id
             WHERE ws.word_id IS NULL
-            ORDER BY w.id
-            LIMIT 1 OFFSET ?
+            ORDER BY RANDOM()
             "#,
         )
         .map_err(|e| e.to_string())?;
 
-    let word = stmt
-        .query_row(rusqlite::params![offset], |row| {
+    let words = stmt
+        .query_map([], |row| {
             Ok(Word {
                 id: row.get(0)?,
                 word: row.get(1)?,
@@ -32,10 +30,11 @@ pub fn get_next_unmarked(conn: &rusqlite::Connection, offset: i64) -> Result<Opt
                 meaning: row.get(3)?,
             })
         })
-        .optional()
+        .map_err(|e| e.to_string())?
+        .collect::<Result<Vec<_>, _>>()
         .map_err(|e| e.to_string())?;
 
-    Ok(word)
+    Ok(words)
 }
 
 pub fn get_study_pool(conn: &rusqlite::Connection) -> Result<Vec<Word>, String> {
