@@ -84,6 +84,9 @@ pub async fn get_next_unmarked_word(
     offset: i64,
     app: AppHandle,
 ) -> Result<Option<Word>, String> {
+    if offset < 0 {
+        return Err("offset cannot be negative".into());
+    }
     let path = crate::db::db_path(&app)?;
     tokio::task::spawn_blocking(move || {
         let conn = db::open_connection(&path).map_err(|e| e.to_string())?;
