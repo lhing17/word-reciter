@@ -6,12 +6,15 @@ mod services;
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-            if let Err(e) = db::init_db(app.handle()) {
-                eprintln!("Database init failed: {}", e);
-            }
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                if let Err(e) = db::init_db(&handle).await {
+                    eprintln!("Database init failed: {}", e);
+                }
+            });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![commands::ping])
+        .invoke_handler(tauri::generate_handler![])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
