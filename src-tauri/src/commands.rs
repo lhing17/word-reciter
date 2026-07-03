@@ -122,7 +122,7 @@ pub async fn generate_quiz(app: AppHandle) -> Result<Option<Quiz>, String> {
     tokio::task::spawn_blocking(move || {
         let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
         let pool = db::words::get_study_pool(&conn)?;
-        Ok(study::generate_quiz(&pool))
+        Ok(study::generate_quiz(&conn, &pool)?)
     })
     .await
     .map_err(|e| e.to_string())?
@@ -135,15 +135,17 @@ pub async fn submit_study_result(
 ) -> Result<(), String> {
     let path = crate::db::db_path(&app)?;
     tokio::task::spawn_blocking(move || {
-        let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
-        db::word_states::mark_word(&conn, &payload.word, &payload.familiarity_after)?;
+        let mut conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+        let tx = conn.transaction().map_err(|e| e.to_string())?;
+        db::word_states::mark_word(&tx, &payload.word, &payload.familiarity_after)?;
         db::study_logs::log_study(
-            &conn,
+            &tx,
             &payload.word,
             &payload.quiz_type,
             &payload.result,
             &payload.familiarity_after,
         )?;
+        tx.commit().map_err(|e| e.to_string())?;
         Ok(())
     })
     .await

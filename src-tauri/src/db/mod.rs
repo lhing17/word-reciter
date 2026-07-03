@@ -25,8 +25,10 @@ pub async fn init_db(app: &AppHandle) -> Result<(), String> {
             fs::create_dir_all(parent).map_err(|e| e.to_string())?;
         }
 
-        let conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
-        conn.execute_batch(migrations::MIGRATIONS).map_err(|e| e.to_string())?;
+        let mut conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
+        migrations::run_migrations(&mut conn).map_err(|e| e.to_string())?;
+        conn.execute("PRAGMA foreign_keys = ON;", [])
+            .map_err(|e| e.to_string())?;
 
         Ok(())
     })

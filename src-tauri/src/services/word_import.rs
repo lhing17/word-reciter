@@ -69,13 +69,13 @@ pub fn import_from_txt(conn: &mut Connection, path: &str, source: &str) -> Resul
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::migrations::MIGRATIONS;
+    use crate::db::migrations::run_migrations;
     use std::io::Write;
 
     #[test]
     fn imports_default_reference_file() {
         let mut conn = Connection::open_in_memory().unwrap();
-        conn.execute_batch(MIGRATIONS).unwrap();
+        run_migrations(&mut conn).unwrap();
 
         let result = import_from_txt(
             &mut conn,
@@ -113,7 +113,7 @@ mod tests {
         }
 
         let mut conn = Connection::open_in_memory().unwrap();
-        conn.execute_batch(MIGRATIONS).unwrap();
+        run_migrations(&mut conn).unwrap();
 
         let first = import_from_txt(
             &mut conn,
