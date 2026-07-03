@@ -51,6 +51,11 @@ pub fn mark_word(
     word: &str,
     familiarity: &str,
 ) -> Result<(), String> {
+    match familiarity {
+        "unknown" | "half" | "known" => {}
+        _ => return Err(format!("invalid familiarity: {}", familiarity)),
+    }
+
     let word_id: i64 = conn
         .query_row(
             "SELECT id FROM words WHERE word = ?",
