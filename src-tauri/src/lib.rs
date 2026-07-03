@@ -14,7 +14,7 @@ pub fn run() {
             });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![])
+        .invoke_handler(tauri::generate_handler![commands::import_word_list])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
