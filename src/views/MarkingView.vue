@@ -2,7 +2,7 @@
   <div class="marking-view">
     <div class="header">
       <router-link to="/">← 返回首页</router-link>
-      <span>分类模式 — {{ progress }} / {{ stats.total }}</span>
+      <span>分类模式 — {{ sessionProgress }} / {{ stats.total }}</span>
     </div>
 
     <div v-if="error" class="error">
@@ -13,8 +13,8 @@
     <div v-if="currentWord" class="card">
       <div class="word">{{ currentWord.word }}</div>
       <div class="hint">按 1/2/3 或点击下方按钮标记</div>
-      <MarkButtons :disabled="isProcessing" @mark="onMark" />
-      <button class="skip" :disabled="isProcessing" @click="nextWord">跳过</button>
+      <MarkButtons :disabled="isProcessing || isLoading" @mark="onMark" />
+      <button class="skip" :disabled="isProcessing || isLoading" @click="nextWord">跳过</button>
     </div>
 
     <div v-else-if="isInitializing || isLoading" class="empty">加载中……</div>
@@ -42,7 +42,7 @@ const isInitializing = ref(true)
 const error = ref<string | null>(null)
 
 const stats = computed(() => wordsStore.stats)
-const progress = computed(() => wordsStore.stats.unknown + wordsStore.stats.half + wordsStore.stats.known)
+const sessionProgress = ref(0)
 
 async function loadNext() {
   isLoading.value = true
@@ -62,7 +62,8 @@ async function loadNext() {
 }
 
 async function nextWord() {
-  if (isProcessing.value) return
+  if (isProcessing.value || isLoading.value) return
+  sessionProgress.value += 1
   offset.value += 1
   await loadNext()
 }
@@ -74,6 +75,7 @@ async function onMark(familiarity: Familiarity) {
   try {
     await markWord(currentWord.value.word, familiarity)
     await wordsStore.loadStats()
+    sessionProgress.value += 1
     offset.value = 0
     await loadNext()
   } catch (e) {
