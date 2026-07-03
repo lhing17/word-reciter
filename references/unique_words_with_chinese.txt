@@ -139,7 +139,7 @@ acquire|获得
 acre|英亩
 acrimonious|充满敌意的
 acrimoniously|充满敌意地
-acrimoniousness|尖刻
+acrimoniousness|尖锐的敌意
 across|横跨
 act|
 action|动作
@@ -296,7 +296,7 @@ alight|下车
 align|对齐
 alignment|对齐
 alike|一样
-alive|活着
+alive|活着的
 all|所有
 all right|好的
 allegation|指控
@@ -384,7 +384,7 @@ analyse|分析
 analysis|分析
 analyst|分析师
 analytical|分析性的
-analytically|从分析的角度来看
+analytically|从分析角度来看
 anarchy|无政府状态
 anatomy|解剖学
 ancestor|祖先
@@ -489,7 +489,7 @@ approximate|近似
 approximately|大约
 approximation|近似
 apron|围裙
-apt|apt简体中文（大陆）
+apt|
 aptness|恰当性
 aquarium|水族馆
 arbitrarily|任意地
@@ -516,7 +516,7 @@ argument|论点
 argumentative|爱争辩的
 arise|崛起
 arithmetic|算术
-arm|arm简体中文（大陆）
+arm|
 armchair|扶手椅
 armed|武装的
 armour|盔甲
@@ -808,7 +808,7 @@ beer|啤酒
 beery|啤酒味
 before|之前
 beforehand|事先
-beg|beg简体中文（大陆）
+beg|
 beggar|乞丐
 begin|开始
 beginner|初学者
@@ -873,7 +873,7 @@ bilingual|双语
 bill|账单
 billion|十亿
 billionth|十亿分之一
-bin|binsimplified Chinese (大陆)
+bin|
 bind|
 binoculars|双筒望远镜
 biographical|传记的
@@ -1199,7 +1199,7 @@ cannot|不能
 canoe|独木舟
 canvas|
 canyon|峡谷
-cap|cap简体中文（大陆）
+cap|
 capability|能力
 capable|有能力
 capably|干练地
@@ -1259,11 +1259,11 @@ catalytic|催化
 catastrophe|灾难
 catastrophic|灾难性的
 catastrophically|灾难性地
-catch|catch简体中文（大陆）
+catch|
 categorization|分类
 categorize|分类
 category|类别
-cater|cater简体中文（大陆）
+cater|
 cathedral|大教堂
 cattle|牛
 cause|原因
@@ -1923,7 +1923,7 @@ correspondingly|相应地
 corridor|走廊
 corrupt|腐败的
 corruptibility|易腐性
-corruptible|会腐朽的
+corruptible|会腐坏的
 corruption|腐败
 corruptly|腐败地
 corruptness|腐败
@@ -1936,7 +1936,7 @@ cost|成本
 costliness|昂贵
 costly|代价高昂
 costume|戏服
-cosy|温馨的
+cosy|温馨
 cottage|小屋
 cotton|棉花
 couch|沙发
@@ -2038,7 +2038,7 @@ crooked|歪的
 crookedly|歪歪扭扭地
 crookedness|歪斜
 crop|裁剪
-cross|cross简体中文（大陆）
+cross|
 crossing|穿越
 crossly|不耐烦地
 crossroads|十字路口
@@ -2070,7 +2070,7 @@ cub|幼崽
 cube|立方体
 cubic|立方
 cucumber|黄瓜
-cue|cue简体中文（大陆）
+cue|
 cuisine|菜系
 culminate|达到高潮
 cult|邪教
@@ -2434,7 +2434,7 @@ differentiation|差异化
 differently|不同地
 difficult|困难的
 difficulty|难度
-dig|dig简体中文（大陆）
+dig|
 digest|摘要
 digestion|消化
 digit|数字
@@ -2455,7 +2455,7 @@ diner|餐馆
 dining room|餐厅
 dinner|晚餐
 dinosaur|恐龙
-dip|dip简体中文（大陆）
+dip|
 diploma|文凭
 diplomacy|外交
 diplomat|外交官
@@ -3061,7 +3061,7 @@ evidently|显然
 evil|邪恶
 evilly|
 evocation|召唤
-evoke|evoke简体中文（大陆）
+evoke|
 evolution|进化
 evolutionary|进化的
 evolve|演化
@@ -3509,7 +3509,7 @@ formula|公式
 formulate|制定
 formulation|配方
 fort|堡垒
-forth|forth简体中文（大陆）
+forth|
 forthcoming|即将出版
 fortieth|第四十
 fortnight|半个月
@@ -3755,7 +3755,7 @@ glossy|光泽的
 glove|手套
 glow|光芒
 glue|胶水
-go|go简体中文（大陆）
+go|
 goal|目标
 goalkeeper|守门员
 goat|山羊
@@ -3942,7 +3942,7 @@ handout|讲义
 handsome|英俊的
 handsomely|慷慨地
 handy|方便的
-hang|hang简体中文（大陆）
+hang|
 hangover|宿醉
 happen|发生
 happily|开心地
@@ -4705,7 +4705,7 @@ itself|它本身
 ivory|象牙
 jacket|夹克
 jail|监狱
-jam|jamsimplified Chinese (大陆)
+jam|
 jar|
 jargon|行话
 jaw|下巴
@@ -4737,7 +4737,7 @@ judge|法官
 judgment|判决
 judo|柔道
 jug|水壶
-juggle|juggle简体中文（大陆）
+juggle|
 juice|果汁
 juiciness|多汁感
 juicy|多汁的
@@ -4856,7 +4856,7 @@ lawmaker|议员
 lawn|草坪
 lawsuit|诉讼
 lawyer|律师
-lay|lay简体中文（大陆）
+lay|
 layer|层
 layout|版式
 lazily|懒洋洋地
@@ -5360,7 +5360,7 @@ misty|
 misunderstand|误解
 misunderstanding|误解
 misuse|滥用
-mix|mix简体中文（大陆）
+mix|
 mixed|混合
 mixture|混合物
 moan|呻吟
@@ -5483,7 +5483,7 @@ murmur|低语
 murmuring|低语
 muscle|肌肉
 muscular|强壮的
-muscularity|肌肉发达程度
+muscularity|肌肉发达
 museum|博物馆
 mushroom|蘑菇
 music|音乐
@@ -5627,7 +5627,7 @@ noisy|嘈杂的
 nominal|名义
 nominate|提名
 nomination|提名
-non-fiction|非虚构类
+non-fiction|非虚构作品
 none|无
 nonetheless|尽管如此
 nonsense|胡说八道
@@ -5801,7 +5801,7 @@ opposition|反对派
 oppression|压迫
 oppressive|压迫性的
 oppressively|令人窒息地
-opt|opt简体中文（大陆）
+opt|
 optical|光学
 optically|光学地
 optimal|最优的
@@ -5912,7 +5912,7 @@ ownership|所有权
 oxygen|氧气
 p.m.|下午
 pace|步调
-pack|packsimplified Chinese (大陆)
+pack|
 package|包
 packaging|包装
 packed|装满的
@@ -6047,7 +6047,7 @@ pedestrian|行人
 pedestrian crossing|人行横道
 peel|
 peer|对等方
-peg|peg简体中文（大陆）
+peg|
 pen|笔
 penalty|处罚
 pencil|铅笔
@@ -6444,12 +6444,12 @@ priority|优先级
 prison|监狱
 prisoner|囚犯
 privacy|隐私
-private|private简体中文（大陆）
+private|
 privately|私下里
 privilege|特权
 privileged|享有特权
 prize|奖品
-pro|pro简体中文（大陆）
+pro|
 probability|概率
 probable|可能的
 probably|大概
@@ -6692,7 +6692,7 @@ rainbow|彩虹
 raincoat|雨衣
 rainless|无雨
 rainy|下雨的
-raise|raisesimplified Chinese (大陆)
+raise|
 rally|集会
 ramp|坡道
 ranch|牧场
@@ -6719,11 +6719,11 @@ rationale|理由
 rationality|理性
 rationally|理性地
 rattle|咔嗒声
-raw|raw简体中文（大陆）
+raw|
 rawness|粗糙感
 ray|
 razor|剃须刀
-reach|reachsimplified Chinese (大陆)
+reach|
 react|
 reaction|反应
 reactor|反应堆
@@ -6822,7 +6822,7 @@ recycling|回收利用
 red|红色
 redeem|兑换
 redness|发红
-reduce|reduce简体中文（大陆）
+reduce|
 reduction|减少
 redundant|多余的
 refer|参见
@@ -7063,7 +7063,7 @@ revolutionary|革命性的
 revolutionize|彻底改变
 revolve|
 reward|奖励
-rewarding|有回报的
+rewarding|有成就感的
 rewrite|重写
 rhetoric|修辞学
 rhyme|韵脚
@@ -7094,7 +7094,7 @@ right-winger|右翼人士
 rightly|理所应当地
 rightness|正确性
 rigid|刚性的
-rigidity|刚性
+rigidity|刚度
 rigidly|僵化地
 rigorous|严谨的
 rigorously|严格地
@@ -7129,7 +7129,7 @@ robot|机器人
 robust|稳健的
 robustly|稳健地
 robustness|鲁棒性
-rock|rock简体中文（大陆）
+rock|
 rocket|火箭
 rocky|崎岖的
 rod|杆
@@ -7295,7 +7295,7 @@ scowl|皱眉
 scramble|混战
 scrap|废料
 scrape|刮
-scratch|scratch简体中文（大陆）
+scratch|
 scrawl|涂鸦
 scream|尖叫
 screech|尖叫
@@ -7397,7 +7397,7 @@ set|
 set-up|设置
 setback|挫折
 setting|设置
-settle|settle简体中文（大陆）
+settle|
 settlement|结算
 settler|定居者
 seven|七
@@ -8314,7 +8314,7 @@ ten|十
 tenant|租户
 tend|
 tendency|倾向
-tender|招标书
+tender|招标
 tenderly|温柔地
 tenderness|柔情
 tennis|网球
@@ -8441,7 +8441,7 @@ throat|喉咙
 throne|王座
 through|通过
 throughout|在……期间
-throw|throw简体中文（大陆）
+throw|
 thrust|推力
 thug|流氓
 thumb|缩略图
@@ -8631,7 +8631,7 @@ tricky|棘手的
 trigger|触发器
 trillion|万亿
 trillionth|万亿分之一
-trim|trim简体中文（大陆）
+trim|
 trip|旅程
 triple|三倍
 triumph|胜利
@@ -8822,7 +8822,7 @@ uniquely|独特地
 uniqueness|独特性
 unit|单位
 unite|团结
-united|united简体中文（大陆）
+united|
 unity|统一
 universal|通用
 universality|普遍性
@@ -8961,14 +8961,14 @@ utter|
 utterly|完全地
 vacancy|职位空缺
 vacant|空缺
-vacantly|呆呆地
+vacantly|呆滞地
 vacation|假期
 vaccine|疫苗
 vacuum|真空
 vague|模糊的
 vaguely|隐约地
 vagueness|模糊性
-vain|虚荣的
+vain|虚荣
 vainly|徒劳地
 valid|有效
 validate|验证
@@ -9044,7 +9044,7 @@ vibrantly|生动地
 vibrate|振动
 vibration|振动
 vice versa|反之亦然
-vicinity|周边
+vicinity|周边地区
 vicious|恶毒的
 viciously|恶毒地
 viciousness|凶残
@@ -9096,7 +9096,7 @@ vividness|生动性
 vocabulary|词汇
 vocal|声乐
 vocally|口头地
-vocational|职业的
+vocational|职业
 voice|语音
 voicemail|语音信箱
 void|
@@ -9256,7 +9256,7 @@ whom|谁
 whoops|哎呀
 whose|其
 why|为什么
-wi-fi|Wi-Fi
+wi-fi|
 wicked|邪恶的
 wickedly|极其
 wickedness|邪恶
@@ -9286,7 +9286,7 @@ windscreen|挡风玻璃
 windshield|挡风玻璃
 windy|多风的
 wine|葡萄酒
-wing|wingsimplified Chinese (大陆)
+wing|
 wink|眨眼
 winner|获胜者
 winning|获胜
