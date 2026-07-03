@@ -57,7 +57,7 @@ pub async fn import_word_list(path: String, source: String, app: AppHandle) -> R
     let resolved_path = resolve_word_list_path(&path, &app)?;
 
     tokio::task::spawn_blocking(move || {
-        let mut conn = rusqlite::Connection::open(&db_path)
+        let mut conn = db::open_connection(&db_path)
             .map_err(|e| format!("Failed to open database at {:?}: {}", db_path, e))?;
         word_import::import_from_txt(&mut conn,
             resolved_path.to_string_lossy().as_ref(),
@@ -72,7 +72,7 @@ pub async fn import_word_list(path: String, source: String, app: AppHandle) -> R
 pub async fn get_stats(app: AppHandle) -> Result<Stats, String> {
     let path = crate::db::db_path(&app)?;
     tokio::task::spawn_blocking(move || {
-        let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+        let conn = db::open_connection(&path).map_err(|e| e.to_string())?;
         db::word_states::get_stats(&conn)
     })
     .await
@@ -86,7 +86,7 @@ pub async fn get_next_unmarked_word(
 ) -> Result<Option<Word>, String> {
     let path = crate::db::db_path(&app)?;
     tokio::task::spawn_blocking(move || {
-        let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+        let conn = db::open_connection(&path).map_err(|e| e.to_string())?;
         db::words::get_next_unmarked(&conn, offset)
     })
     .await
@@ -101,7 +101,7 @@ pub async fn mark_word(
 ) -> Result<(), String> {
     let path = crate::db::db_path(&app)?;
     tokio::task::spawn_blocking(move || {
-        let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+        let conn = db::open_connection(&path).map_err(|e| e.to_string())?;
         db::word_states::mark_word(&conn, &word, &familiarity)
     })
     .await
@@ -120,7 +120,7 @@ pub struct StudyResultPayload {
 pub async fn generate_quiz(app: AppHandle) -> Result<Option<Quiz>, String> {
     let path = crate::db::db_path(&app)?;
     tokio::task::spawn_blocking(move || {
-        let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+        let conn = db::open_connection(&path).map_err(|e| e.to_string())?;
         let pool = db::words::get_study_pool(&conn)?;
         Ok(study::generate_quiz(&conn, &pool)?)
     })
@@ -135,7 +135,7 @@ pub async fn submit_study_result(
 ) -> Result<(), String> {
     let path = crate::db::db_path(&app)?;
     tokio::task::spawn_blocking(move || {
-        let mut conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+        let mut conn = db::open_connection(&path).map_err(|e| e.to_string())?;
         let tx = conn.transaction().map_err(|e| e.to_string())?;
         db::word_states::mark_word(&tx, &payload.word, &payload.familiarity_after)?;
         db::study_logs::log_study(

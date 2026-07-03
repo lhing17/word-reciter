@@ -1,5 +1,6 @@
 use crate::db::words::Word;
 use rand::seq::{IteratorRandom, SliceRandom};
+use rand::Rng;
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -45,12 +46,20 @@ fn fetch_meaningful_words_excluding(
 }
 
 pub fn generate_quiz(conn: &Connection, pool: &[Word]) -> Result<Option<Quiz>, String> {
+    let mut rng = rand::thread_rng();
+    generate_quiz_with_rng(conn, pool, &mut rng)
+}
+
+pub fn generate_quiz_with_rng<R: Rng>(
+    conn: &Connection,
+    pool: &[Word],
+    rng: &mut R,
+) -> Result<Option<Quiz>, String> {
     if pool.is_empty() {
         return Ok(None);
     }
-    let mut rng = rand::thread_rng();
     let target = pool
-        .choose(&mut rng)
+        .choose(rng)
         .ok_or_else(|| "empty pool".to_string())?;
     let answer = target
         .meaning
@@ -60,7 +69,7 @@ pub fn generate_quiz(conn: &Connection, pool: &[Word]) -> Result<Option<Quiz>, S
         .ok_or_else(|| "target has no meaning".to_string())?
         .to_string();
 
-    let quiz_type = rand::random::<u8>() % 10;
+    let quiz_type = rng.gen::<u8>() % 10;
     if quiz_type < 4 {
         // choice: ensure 4 options (1 correct + 3 distractors)
         let mut distractors: Vec<String> = pool
@@ -70,7 +79,7 @@ pub fn generate_quiz(conn: &Connection, pool: &[Word]) -> Result<Option<Quiz>, S
                 let m = w.meaning.as_ref()?.trim();
                 if m.is_empty() { None } else { Some(m.to_string()) }
             })
-            .choose_multiple(&mut rng, 3);
+            .choose_multiple(rng, 3);
 
         if distractors.len() < 3 {
             let fallback = fetch_meaningful_words_excluding(conn, &target.word)?;
@@ -83,7 +92,7 @@ pub fn generate_quiz(conn: &Connection, pool: &[Word]) -> Result<Option<Quiz>, S
             let extra: Vec<String> = fallback
                 .into_iter()
                 .filter(|m| !used.contains(m))
-                .choose_multiple(&mut rng, needed);
+                .choose_multiple(rng, needed);
             distractors.extend(extra);
         }
 
@@ -97,7 +106,7 @@ pub fn generate_quiz(conn: &Connection, pool: &[Word]) -> Result<Option<Quiz>, S
 
         let mut options = distractors;
         options.push(answer.clone());
-        options.shuffle(&mut rng);
+        options.shuffle(rng);
         Ok(Some(Quiz::Choice {
             word: target.word.clone(),
             correct: answer,
@@ -126,5 +135,147 @@ pub fn generate_quiz(conn: &Connection, pool: &[Word]) -> Result<Option<Quiz>, S
             word: target.word.clone(),
             answer,
         }))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::migrations::run_migrations;
+    use rand::rngs::StdRng;
+    use rand::SeedableRng;
+    use rusqlite::Connection;
+
+    fn make_word(id: i64, word: &str, meaning: &str) -> Word {
+        Word {
+            id,
+            word: word.to_string(),
+            source: None,
+            meaning: Some(meaning.to_string()),
+        }
+    }
+
+    fn insert_word(conn: &Connection, word: &str, meaning: &str) {
+        conn.execute(
+            "INSERT INTO words (word, meaning) VALUES (?, ?)",
+            rusqlite::params![word, meaning],
+        )
+        .unwrap();
+    }
+
+    /// Generates quizzes until a choice quiz is produced.
+    fn first_choice_quiz(conn: &Connection, pool: &[Word], rng: &mut StdRng) -> Quiz {
+        for _ in 0..200 {
+            if let Some(Quiz::Choice {
+                word,
+                correct,
+                options,
+            }) = generate_quiz_with_rng(conn, pool, rng).unwrap()
+            {
+                return Quiz::Choice {
+                    word,
+                    correct,
+                    options,
+                };
+            }
+        }
+        panic!("failed to generate a choice quiz after 200 attempts");
+    }
+
+    /// Generates quizzes until a recall quiz is produced.
+    fn first_recall_quiz(conn: &Connection, pool: &[Word], rng: &mut StdRng) -> Quiz {
+        for _ in 0..200 {
+            if let Some(Quiz::Recall { word, answer }) = generate_quiz_with_rng(conn, pool, rng).unwrap() {
+                return Quiz::Recall { word, answer };
+            }
+        }
+        panic!("failed to generate a recall quiz after 200 attempts");
+    }
+
+    #[test]
+    fn empty_pool_returns_none() {
+        let conn = Connection::open_in_memory().unwrap();
+        let mut rng = StdRng::seed_from_u64(1);
+        let quiz = generate_quiz_with_rng(&conn, &[], &mut rng).unwrap();
+        assert!(quiz.is_none());
+    }
+
+    #[test]
+    fn single_word_pool_falls_back_to_recall() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        run_migrations(&mut conn).unwrap();
+        let pool = vec![make_word(1, "hello", "你好")];
+        let mut rng = StdRng::seed_from_u64(1);
+
+        let quiz = first_recall_quiz(&conn, &pool, &mut rng);
+        match quiz {
+            Quiz::Recall { word, answer } => {
+                assert_eq!(word, "hello");
+                assert_eq!(answer, "你好");
+            }
+            _ => panic!("expected recall quiz when no distractors are available"),
+        }
+    }
+
+    #[test]
+    fn pool_with_enough_distractors_produces_choice_with_four_options() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        run_migrations(&mut conn).unwrap();
+        let pool = vec![
+            make_word(1, "apple", "苹果"),
+            make_word(2, "banana", "香蕉"),
+            make_word(3, "cherry", "樱桃"),
+            make_word(4, "date", "枣"),
+        ];
+        let mut rng = StdRng::seed_from_u64(1);
+
+        let quiz = first_choice_quiz(&conn, &pool, &mut rng);
+        match quiz {
+            Quiz::Choice { correct, options, .. } => {
+                assert_eq!(options.len(), 4);
+                assert!(options.contains(&correct));
+            }
+            _ => panic!("expected choice quiz when distractors are available"),
+        }
+    }
+
+    #[test]
+    fn pool_requiring_global_fallback_produces_four_options() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        run_migrations(&mut conn).unwrap();
+        insert_word(&conn, "lemon", "柠檬");
+        insert_word(&conn, "mango", "芒果");
+
+        let pool = vec![
+            make_word(1, "apple", "苹果"),
+            make_word(2, "banana", "香蕉"),
+        ];
+        let mut rng = StdRng::seed_from_u64(1);
+
+        let quiz = first_choice_quiz(&conn, &pool, &mut rng);
+        match quiz {
+            Quiz::Choice { correct, options, .. } => {
+                assert_eq!(options.len(), 4);
+                assert!(options.contains(&correct));
+            }
+            _ => panic!("expected choice quiz after global fallback"),
+        }
+    }
+
+    #[test]
+    fn pool_with_insufficient_meanings_falls_back_to_recall() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        run_migrations(&mut conn).unwrap();
+        let pool = vec![
+            make_word(1, "apple", "苹果"),
+            make_word(2, "banana", "香蕉"),
+        ];
+        let mut rng = StdRng::seed_from_u64(1);
+
+        let quiz = first_recall_quiz(&conn, &pool, &mut rng);
+        match quiz {
+            Quiz::Recall { .. } => {}
+            _ => panic!("expected recall when no meaningful distractors exist anywhere"),
+        }
     }
 }
