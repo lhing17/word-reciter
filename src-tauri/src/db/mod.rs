@@ -1,0 +1,19 @@
+use std::fs;
+use tauri::{AppHandle, Manager};
+
+pub mod migrations;
+
+/// Initializes the SQLite database in the application data directory.
+///
+/// Creates the database file and runs the migration SQL to ensure the
+/// `words`, `word_states`, and `study_logs` tables exist.
+pub fn init_db(app: &AppHandle) -> Result<(), String> {
+    let app_data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    fs::create_dir_all(&app_data_dir).map_err(|e| e.to_string())?;
+
+    let db_path = app_data_dir.join("word_reciter.db");
+    let conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
+    conn.execute_batch(migrations::MIGRATIONS).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
