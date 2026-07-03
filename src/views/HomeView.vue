@@ -2,6 +2,8 @@
   <div class="home">
     <h1>Word Reciter</h1>
 
+    <div v-if="error" class="error">{{ error }}</div>
+
     <div class="stats">
       <div class="stat-card">
         <div class="number">{{ wordsStore.stats.total }}</div>
@@ -31,13 +33,18 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useWordsStore } from '../stores/words'
 
 const wordsStore = useWordsStore()
+const error = ref<string | null>(null)
 
 onMounted(async () => {
-  await wordsStore.ensureDefaultWordListImported()
+  try {
+    await wordsStore.ensureDefaultWordListImported()
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : String(e)
+  }
 })
 </script>
 
@@ -89,5 +96,12 @@ onMounted(async () => {
   color: #999;
   margin-top: 24px;
   text-align: center;
+}
+.error {
+  color: #c00;
+  background: #ffeaea;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
 }
 </style>

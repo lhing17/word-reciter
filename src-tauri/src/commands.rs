@@ -24,6 +24,10 @@ pub async fn import_word_list(path: String, source: String, app: AppHandle) -> R
 #[command]
 pub async fn get_stats(app: AppHandle) -> Result<Stats, String> {
     let path = crate::db::db_path(&app)?;
-    let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
-    db::word_states::get_stats(&conn)
+    tokio::task::spawn_blocking(move || {
+        let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+        db::word_states::get_stats(&conn)
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }

@@ -51,14 +51,22 @@ pub fn mark_word(
     word: &str,
     familiarity: &str,
 ) -> Result<(), String> {
+    let word_id: i64 = conn
+        .query_row(
+            "SELECT id FROM words WHERE word = ?",
+            rusqlite::params![word],
+            |row| row.get(0),
+        )
+        .map_err(|_| format!("word not found: {}", word))?;
+
     let sql = r#"
         INSERT INTO word_states (word_id, familiarity, marked_at, updated_at)
-        VALUES ((SELECT id FROM words WHERE word = ?), ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ON CONFLICT(word_id) DO UPDATE SET
             familiarity = excluded.familiarity,
             updated_at = CURRENT_TIMESTAMP
     "#;
-    conn.execute(sql, rusqlite::params![word, familiarity])
+    conn.execute(sql, rusqlite::params![word_id, familiarity])
         .map_err(|e| e.to_string())?;
     Ok(())
 }
