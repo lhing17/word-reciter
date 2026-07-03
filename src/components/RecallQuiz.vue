@@ -14,13 +14,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import type { RecallQuiz } from '../types'
 
-defineProps<{ quiz: RecallQuiz; answered: boolean }>()
+const props = defineProps<{ quiz: RecallQuiz; answered: boolean }>()
 const emit = defineEmits<{ (e: 'answer', correct: boolean): void }>()
 
 const showAnswer = ref(false)
+
+watch(() => props.quiz, () => {
+  showAnswer.value = false
+}, { deep: true })
 </script>
 
 <style scoped>

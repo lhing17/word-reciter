@@ -12,13 +12,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import type { FillQuiz } from '../types'
 
 const props = defineProps<{ quiz: FillQuiz; answered: boolean }>()
 const emit = defineEmits<{ (e: 'answer', correct: boolean): void }>()
 
 const input = ref('')
+
+watch(() => props.quiz, () => {
+  input.value = ''
+}, { deep: true })
 
 function normalize(s: string) {
   return s.trim().toLowerCase().replace(/[.,!?]+$/, '')

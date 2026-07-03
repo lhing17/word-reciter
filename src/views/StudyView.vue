@@ -32,8 +32,10 @@
       <StudyResultPanel
         v-if="studyStore.answered && studyStore.currentQuiz"
         :answer="correctAnswer"
+        :disabled="!studyStore.answered || studyStore.submitting"
         @finish="onFinish"
       />
+      <div v-if="studyStore.error" class="error" style="margin-top: 16px; text-align: center;">{{ studyStore.error }}</div>
     </div>
 
     <div v-else-if="studyStore.loading" class="empty">加载中……</div>
@@ -75,9 +77,11 @@ function onAnswer(correct: boolean) {
 }
 
 async function onFinish(familiarity: Familiarity) {
-  await studyStore.finishQuiz(familiarity)
-  selectedOption.value = null
-  await wordsStore.loadStats()
+  const success = await studyStore.finishQuiz(familiarity)
+  if (success) {
+    selectedOption.value = null
+    await wordsStore.loadStats()
+  }
 }
 
 onMounted(() => {

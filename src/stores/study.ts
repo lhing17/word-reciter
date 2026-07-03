@@ -11,6 +11,7 @@ export const useStudyStore = defineStore('study', () => {
   const sessionCorrect = ref(0)
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const submitting = ref(false)
 
   async function loadQuiz() {
     answered.value = false
@@ -34,15 +35,24 @@ export const useStudyStore = defineStore('study', () => {
     if (isCorrect) sessionCorrect.value += 1
   }
 
-  async function finishQuiz(familiarityAfter: Familiarity) {
-    if (!currentQuiz.value || !result.value) return
-    await submitStudyResult({
-      word: currentQuiz.value.word,
-      quiz_type: currentQuiz.value.type,
-      result: result.value,
-      familiarity_after: familiarityAfter,
-    })
-    await loadQuiz()
+  async function finishQuiz(familiarityAfter: Familiarity): Promise<boolean> {
+    if (!currentQuiz.value || !result.value) return false
+    submitting.value = true
+    try {
+      await submitStudyResult({
+        word: currentQuiz.value.word,
+        quiz_type: currentQuiz.value.type,
+        result: result.value,
+        familiarity_after: familiarityAfter,
+      })
+      await loadQuiz()
+      return true
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : '提交学习结果失败，请稍后重试。'
+      return false
+    } finally {
+      submitting.value = false
+    }
   }
 
   return {
@@ -53,6 +63,7 @@ export const useStudyStore = defineStore('study', () => {
     sessionCorrect,
     loading,
     error,
+    submitting,
     loadQuiz,
     recordAnswer,
     finishQuiz,
