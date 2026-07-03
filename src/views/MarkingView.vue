@@ -17,7 +17,8 @@
       <button class="skip" :disabled="isProcessing" @click="nextWord">跳过</button>
     </div>
 
-    <div v-else-if="!isLoading" class="empty">
+    <div v-else-if="isInitializing || isLoading" class="empty">加载中……</div>
+    <div v-else class="empty">
       所有单词已分类完成 🎉
     </div>
   </div>
@@ -37,6 +38,7 @@ const currentWord = ref<Word | null>(null)
 const offset = ref(0)
 const isProcessing = ref(false)
 const isLoading = ref(false)
+const isInitializing = ref(true)
 const error = ref<string | null>(null)
 
 const stats = computed(() => wordsStore.stats)
@@ -95,6 +97,8 @@ onMounted(async () => {
     await loadNext()
   } catch (e) {
     error.value = e instanceof Error ? e.message : '初始化失败'
+  } finally {
+    isInitializing.value = false
   }
   window.addEventListener('keydown', onKeyDown)
 })

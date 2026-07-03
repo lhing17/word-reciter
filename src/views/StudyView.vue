@@ -38,7 +38,7 @@
       <div v-if="studyStore.error" class="error" style="margin-top: 16px; text-align: center;">{{ studyStore.error }}</div>
     </div>
 
-    <div v-else-if="studyStore.loading" class="empty">加载中……</div>
+    <div v-else-if="isInitializing || studyStore.loading" class="empty">加载中……</div>
     <div v-else-if="studyStore.error" class="empty error">
       <div>{{ studyStore.error }}</div>
       <button class="retry-btn" @click="studyStore.loadQuiz()">重试</button>
@@ -62,6 +62,7 @@ import type { Familiarity } from '../types'
 const studyStore = useStudyStore()
 const wordsStore = useWordsStore()
 const selectedOption = ref<string | null>(null)
+const isInitializing = ref(true)
 
 const accuracy = computed(() => {
   if (studyStore.sessionTotal === 0) return '0%'
@@ -94,6 +95,8 @@ onMounted(async () => {
     await studyStore.loadQuiz()
   } catch (e) {
     studyStore.error = e instanceof Error ? e.message : '初始化失败'
+  } finally {
+    isInitializing.value = false
   }
 })
 </script>
