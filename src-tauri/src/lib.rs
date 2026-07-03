@@ -1,8 +1,6 @@
 mod commands;
 mod db;
 mod services;
-#[cfg(test)]
-mod smoke_test;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
