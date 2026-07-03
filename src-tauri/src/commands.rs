@@ -122,7 +122,7 @@ pub async fn generate_quiz(app: AppHandle) -> Result<Option<Quiz>, String> {
     tokio::task::spawn_blocking(move || {
         let conn = db::open_connection(&path).map_err(|e| e.to_string())?;
         let pool = db::words::get_study_pool(&conn)?;
-        Ok(study::generate_quiz(&conn, &pool)?)
+        study::generate_quiz(&conn, &pool)
     })
     .await
     .map_err(|e| e.to_string())?

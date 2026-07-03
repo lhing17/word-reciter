@@ -25,7 +25,7 @@
 | 桌面端框架 | Tauri v2 | Rust 后端 + Web 前端，产物体积小，支持 Windows / macOS / Linux。 |
 | 前端 | Vue 3 + TypeScript + Vite | 组件化开发，Vue Router 切换模式。 |
 | 后端 | Rust + Tauri Commands | 本地文件与数据库操作。 |
-| 本地存储 | SQLite（tauri-plugin-sql） | 保存单词、用户标记、学习记录。 |
+| 本地存储 | SQLite（rusqlite） | 保存单词、用户标记、学习记录，由 Rust 后端直接访问。 |
 | 中文释义来源 | DeepL API 预生成 | 通过 `scripts/generate_chinese_meanings.py` 生成 `references/unique_words_with_chinese.txt`，应用直接从本地文件读取。 |
 | 词库文件 | `references/unique_words.txt` / `references/unique_words_with_chinese.txt` | 默认朗文 9000 词；支持从 `.txt` 导入更多词库。 |
 

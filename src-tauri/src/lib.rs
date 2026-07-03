@@ -8,7 +8,11 @@ pub fn run() {
         .setup(|app| {
             let handle = app.handle().clone();
             tauri::async_runtime::block_on(async move {
-                db::init_db(&handle).await.map_err(|e| e.into())
+                if let Err(e) = db::init_db(&handle).await {
+                    eprintln!("Database initialization failed: {}", e);
+                    return Err(e.into());
+                }
+                Ok(())
             })
         })
         .invoke_handler(tauri::generate_handler![

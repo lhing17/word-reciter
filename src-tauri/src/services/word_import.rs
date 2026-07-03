@@ -77,9 +77,12 @@ mod tests {
         let mut conn = Connection::open_in_memory().unwrap();
         run_migrations(&mut conn).unwrap();
 
+        let reference_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../references/unique_words_with_chinese.txt");
+
         let result = import_from_txt(
             &mut conn,
-            "../references/unique_words_with_chinese.txt",
+            reference_path.to_str().unwrap(),
             "unique_words_with_chinese.txt",
         )
         .unwrap();
@@ -89,7 +92,7 @@ mod tests {
 
         let second = import_from_txt(
             &mut conn,
-            "../references/unique_words_with_chinese.txt",
+            reference_path.to_str().unwrap(),
             "unique_words_with_chinese.txt",
         )
         .unwrap();
