@@ -72,6 +72,7 @@ const correctAnswer = computed(() => {
   const q = studyStore.currentQuiz
   if (!q) return ''
   if (q.type === 'choice') return q.correct
+  if (q.type === 'recall') return q.answer
   return q.word
 })
 

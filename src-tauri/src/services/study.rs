@@ -71,14 +71,19 @@ pub fn generate_quiz_with_rng<R: Rng>(
 
     let quiz_type = rng.gen::<u8>() % 10;
     if quiz_type < 4 {
-        // choice: ensure 4 options (1 correct + 3 distractors)
-        let mut distractors: Vec<String> = pool
+        // choice: ensure 4 unique options (1 correct + 3 distractors)
+        let target_meaning = answer.clone();
+        let unique_distractor_meanings: HashSet<String> = pool
             .iter()
             .filter(|w| w.word != target.word)
             .filter_map(|w| {
                 let m = w.meaning.as_ref()?.trim();
-                if m.is_empty() { None } else { Some(m.to_string()) }
+                if m.is_empty() || m == target_meaning { None } else { Some(m.to_string()) }
             })
+            .collect();
+        let mut distractors: Vec<String> = unique_distractor_meanings
+            .iter()
+            .cloned()
             .choose_multiple(rng, 3);
 
         if distractors.len() < 3 {
@@ -86,14 +91,18 @@ pub fn generate_quiz_with_rng<R: Rng>(
             let used: HashSet<String> = distractors
                 .iter()
                 .cloned()
-                .chain(std::iter::once(answer.clone()))
+                .chain(std::iter::once(target_meaning.clone()))
                 .collect();
             let needed = 3 - distractors.len();
-            let extra: Vec<String> = fallback
+            let extra: HashSet<String> = fallback
                 .into_iter()
                 .filter(|m| !used.contains(m))
+                .collect();
+            let extra_sample: Vec<String> = extra
+                .iter()
+                .cloned()
                 .choose_multiple(rng, needed);
-            distractors.extend(extra);
+            distractors.extend(extra_sample);
         }
 
         if distractors.len() < 3 {
@@ -107,6 +116,13 @@ pub fn generate_quiz_with_rng<R: Rng>(
         let mut options = distractors;
         options.push(answer.clone());
         options.shuffle(rng);
+        let unique_options: HashSet<String> = options.iter().cloned().collect();
+        if unique_options.len() != 4 {
+            return Ok(Some(Quiz::Recall {
+                word: target.word.clone(),
+                answer,
+            }));
+        }
         Ok(Some(Quiz::Choice {
             word: target.word.clone(),
             correct: answer,
@@ -259,6 +275,35 @@ mod tests {
                 assert!(options.contains(&correct));
             }
             _ => panic!("expected choice quiz after global fallback"),
+        }
+    }
+
+    #[test]
+    fn pool_with_duplicate_meanings_produces_unique_options() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        run_migrations(&mut conn).unwrap();
+        // Two words share the same meaning; that meaning must not be duplicated in options.
+        let pool = vec![
+            make_word(1, "apple", "苹果"),
+            make_word(2, "banana", "香蕉"),
+            make_word(3, "cherry", "樱桃"),
+            make_word(4, "date", "枣"),
+            make_word(5, "fake_apple", "苹果"), // duplicate meaning
+        ];
+        let mut rng = StdRng::seed_from_u64(1);
+
+        let quiz = first_choice_quiz(&conn, &pool, &mut rng);
+        match quiz {
+            Quiz::Choice { word: _word, correct, options } => {
+                assert_eq!(options.len(), 4);
+                let unique_options: HashSet<String> = options.iter().cloned().collect();
+                assert_eq!(unique_options.len(), 4, "choice options must be unique");
+                let correct_count = options.iter().filter(|o| *o == &correct).count();
+                // The correct answer must appear exactly once and be among the options.
+                assert_eq!(correct_count, 1, "correct answer must appear exactly once");
+                assert!(options.contains(&correct));
+            }
+            _ => panic!("expected choice quiz when enough unique distractor meanings exist"),
         }
     }
 
