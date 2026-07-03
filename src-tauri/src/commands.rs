@@ -70,12 +70,10 @@ fn check_db_ready(state: &State<'_, AppState>) -> Result<(), String> {
 
 /// Imports the default word list from the bundled resource directory.
 ///
-/// The `path` argument is ignored; the backend always resolves the known-safe
-/// default reference file. The `source` value is stored alongside each imported
-/// word for provenance.
+/// The backend always resolves the known-safe default reference file. The
+/// `source` value is stored alongside each imported word for provenance.
 #[command]
 pub async fn import_word_list(
-    _path: String,
     source: String,
     app: AppHandle,
     state: State<'_, AppState>,
