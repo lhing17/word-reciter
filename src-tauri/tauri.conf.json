@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.tauri.app/config/2.0.0",
+  "productName": "Word Reciter",
+  "version": "0.1.0",
+  "identifier": "com.wordreciter.app",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Word Reciter",
+        "width": 900,
+        "height": 650,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": []
+  }
+}
