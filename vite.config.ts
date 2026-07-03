@@ -8,5 +8,9 @@ export default defineConfig({
     port: 1420,
     strictPort: true,
     watch: { ignored: ['**/src-tauri/**'] }
-  }
+  },
+  test: {
+    environment: 'node',
+    globals: true,
+  },
 })
