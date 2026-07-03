@@ -6,14 +6,14 @@
 
 **Architecture:** Rust 后端通过 Tauri Commands 暴露本地 SQLite 操作；前端 Vue 3 使用 Pinia 管理状态，Vue Router 切换首页、分类模式、背诵模式。词库和中文释义从本地 `references/unique_words_with_chinese.txt` 导入 SQLite。
 
-**Tech Stack:** Tauri v2, Vue 3, TypeScript, Vite, Pinia, Vue Router, tauri-plugin-sql (SQLite), Python 3 + DeepL API。
+**Tech Stack:** Tauri v2, Vue 3, TypeScript, Vite, Pinia, Vue Router, rusqlite (SQLite), Python 3 + DeepL API。
 
 ## Global Constraints
 
 - 平台：Windows / macOS / Linux。
 - 前端框架：Vue 3 + TypeScript + Vite。
 - 后端框架：Tauri v2（Rust）。
-- 本地数据库：SQLite，通过 `tauri-plugin-sql` 访问。
+- 本地数据库：SQLite，后端通过 `rusqlite` 访问。前端不直接操作数据库，全部通过 Tauri Commands 调用后端。
 - 中文释义来源：本地 `references/unique_words_with_chinese.txt`（由 DeepL API 预生成）。
 - 默认词库：`references/unique_words.txt`（朗文 9000 词，9,411 行）。
 - 熟悉度状态：`unknown` / `half` / `known`。
@@ -265,7 +265,6 @@ git commit -m "data: add Chinese meanings generated via DeepL"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
-    "@tauri-apps/plugin-sql": "^2.0.0",
     "pinia": "^2.2.0",
     "vue": "^3.4.0",
     "vue-router": "^4.4.0"
@@ -412,7 +411,7 @@ edition = "2021"
 
 [dependencies]
 tauri = { version = "2.0.0", features = [] }
-tauri-plugin-sql = { version = "2.0.0", features = ["sqlite"] }
+rusqlite = { version = "0.32", features = ["bundled"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.0", features = ["full"] }
@@ -465,17 +464,21 @@ tauri-build = { version = "2.0.0", features = [] }
   "identifier": "default",
   "description": "Default capabilities",
   "windows": ["main"],
-  "permissions": ["core:default", "sql:default", "sql:allow-execute", "sql:allow-select"]
+  "permissions": ["core:default"]
 }
 ```
 
 创建 `src-tauri/src/lib.rs`：
 
 ```rust
+mod commands;
+mod db;
+mod services;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_sql::Builder::default().build())
+        .invoke_handler(tauri::generate_handler![commands::import_word_list])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -489,6 +492,36 @@ pub fn run() {
 fn main() {
     word_reciter::run();
 }
+```
+
+同时创建 `src-tauri/src/commands.rs` 和 `src-tauri/src/services/` 模块占位，确保脚手架可编译：
+
+创建 `src-tauri/src/commands.rs`：
+
+```rust
+#[tauri::command]
+pub async fn import_word_list(_path: String, _source: String) -> Result<(), String> {
+    // Task 3 将实现具体逻辑
+    Ok(())
+}
+```
+
+创建 `src-tauri/src/services/mod.rs`：
+
+```rust
+pub mod word_import;
+```
+
+创建 `src-tauri/src/services/word_import.rs`：
+
+```rust
+// Task 3 将实现从 txt 导入词库逻辑
+```
+
+同时创建 `src-tauri/src/db/mod.rs` 占位（Task 2 将替换为正式实现）：
+
+```rust
+// Task 2 将添加数据库连接初始化
 ```
 
 - [ ] **Step 6: 运行开发环境验证**
@@ -565,17 +598,27 @@ CREATE INDEX IF NOT EXISTS idx_study_logs_word_id ON study_logs(word_id);
 创建 `src-tauri/src/db/mod.rs`：
 
 ```rust
+use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
-use tauri_plugin_sql::{DbInstance, SqliteExt};
 
 pub mod migrations;
 
+pub fn db_path(app: &AppHandle) -> Result<PathBuf, String> {
+    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    Ok(dir.join("word_reciter.db"))
+}
+
 pub async fn init_db(app: &AppHandle) -> Result<(), String> {
-    let db = app.sqlite("word_reciter.db").map_err(|e| e.to_string())?;
-    db.execute(migrations::MIGRATIONS, Vec::new())
-        .await
-        .map_err(|e| e.to_string())?;
-    Ok(())
+    let app = app.clone();
+    tokio::task::spawn_blocking(move || {
+        let path = db_path(&app)?;
+        let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+        conn.execute_batch(migrations::MIGRATIONS).map_err(|e| e.to_string())?;
+        conn.execute("PRAGMA foreign_keys = ON;", []).map_err(|e| e.to_string())?;
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 ```
 
@@ -584,12 +627,13 @@ pub async fn init_db(app: &AppHandle) -> Result<(), String> {
 修改 `src-tauri/src/lib.rs`：
 
 ```rust
+mod commands;
 mod db;
+mod services;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_sql::Builder::default().build())
         .setup(|app| {
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
@@ -599,6 +643,7 @@ pub fn run() {
             });
             Ok(())
         })
+        .invoke_handler(tauri::generate_handler![commands::import_word_list])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -625,134 +670,42 @@ git commit -m "feat(db): add SQLite migrations for words, word_states, study_log
 ## Task 3: 实现词库导入（从 txt 到 SQLite）
 
 **Files:**
-- Create: `src-tauri/src/services/word_import.rs`
-- Create: `src-tauri/src/services/mod.rs`
-- Create: `src-tauri/src/commands.rs`
+- Create/Modify: `src-tauri/src/services/word_import.rs`
+- Modify: `src-tauri/src/commands.rs`
 - Modify: `src-tauri/src/lib.rs`
+- Create: `src/api/tauri.ts`
+- Modify: `src/views/HomeView.vue`（临时验证按钮）
 
 **Interfaces:**
-- Consumes: `DbInstance`。
-- Produces: Tauri command `import_word_list(path: String) -> Result<ImportResult, String>`，其中 `ImportResult` 含 `imported`, `skipped` 字段。
+- 后端使用 `rusqlite::Connection` 直接操作 SQLite。
+- `services::word_import::import_from_txt(conn: &rusqlite::Connection, path: &str, source: &str) -> Result<ImportResult, String>`
+- Tauri command `import_word_list(path: String, source: String, app: AppHandle) -> Result<ImportResult, String>`，其中 `ImportResult` 含 `imported`, `skipped` 字段。
 - 输入文件格式：`word|中文释义`，每行一个；若没有 `|`，则 `meaning` 为空。
+- 命令中通过 `db::db_path(&app)?` 获取数据库文件路径，打开 `rusqlite::Connection`，调用导入服务。
 
 - [ ] **Step 1: 定义导入服务**
 
-创建 `src-tauri/src/services/word_import.rs`：
+创建/修改 `src-tauri/src/services/word_import.rs`：
 
-```rust
-use serde::Serialize;
-use std::fs;
-use std::path::Path;
-use tauri_plugin_sql::DbInstance;
-
-#[derive(Debug, Serialize)]
-pub struct ImportResult {
-    pub imported: usize,
-    pub skipped: usize,
-}
-
-pub async fn import_from_txt(db: &DbInstance, path: &str, source: &str) -> Result<ImportResult, String> {
-    let content = fs::read_to_string(Path::new(path)).map_err(|e| e.to_string())?;
-    let mut imported = 0usize;
-    let mut skipped = 0usize;
-
-    for line in content.lines() {
-        let line = line.trim();
-        if line.is_empty() {
-            continue;
-        }
-        let (word, meaning) = match line.split_once('|') {
-            Some((w, m)) => (w.trim(), Some(m.trim())),
-            None => (line, None),
-        };
-        if word.is_empty() {
-            continue;
-        }
-        let sql = "INSERT OR IGNORE INTO words (word, source, meaning) VALUES (?, ?, ?)";
-        match db.execute(sql, vec![word.into(), source.into(), meaning.into()]).await {
-            Ok(rows_affected) => {
-                if rows_affected > 0 {
-                    imported += 1;
-                } else {
-                    skipped += 1;
-                }
-            }
-            Err(e) => return Err(e.to_string()),
-        }
-    }
-
-    Ok(ImportResult { imported, skipped })
-}
-```
-
-创建 `src-tauri/src/services/mod.rs`：
-
-```rust
-pub mod word_import;
-```
+- 定义 `ImportResult { imported: usize, skipped: usize }`。
+- 实现 `import_from_txt(conn: &rusqlite::Connection, path: &str, source: &str) -> Result<ImportResult, String>`。
+- 读取指定 txt 文件，按行解析 `word|meaning`。
+- 对每一行执行 `INSERT OR IGNORE INTO words (word, source, meaning) VALUES (?, ?, ?)`。
+- 统计 `imported` 与 `skipped`。
 
 - [ ] **Step 2: 暴露为 Tauri Command**
 
-创建 `src-tauri/src/commands.rs`：
+修改 `src-tauri/src/commands.rs`：
 
-```rust
-use serde::Serialize;
-use tauri::AppHandle;
-
-use crate::services::word_import;
-
-#[derive(Serialize)]
-pub struct ImportResult {
-    pub imported: usize,
-    pub skipped: usize,
-}
-
-#[tauri::command]
-pub async fn import_word_list(
-    path: String,
-    source: String,
-    app: AppHandle,
-) -> Result<ImportResult, String> {
-    let db = app.sqlite("word_reciter.db").map_err(|e| e.to_string())?;
-    let result = word_import::import_from_txt(&db, &path, &source).await?;
-    Ok(ImportResult {
-        imported: result.imported,
-        skipped: result.skipped,
-    })
-}
-```
-
-- [ ] **Step 3: 注册命令与全局状态**
+- 定义 `ImportResult` 返回类型（可复用 services 中的结构体或重新导出）。
+- 实现 `#[tauri::command] pub async fn import_word_list(path: String, source: String, app: AppHandle) -> Result<ImportResult, String>`。
+- 在命令内部打开 `rusqlite::Connection`，调用 `word_import::import_from_txt`。
 
 修改 `src-tauri/src/lib.rs`：
 
-```rust
-mod commands;
-mod db;
-mod services;
+- 确保 `commands::import_word_list` 已注册到 `invoke_handler`。
 
-use tauri::Manager;
-
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
-    tauri::Builder::default()
-        .plugin(tauri_plugin_sql::Builder::default().build())
-        .setup(|app| {
-            let handle = app.handle().clone();
-            tauri::async_runtime::spawn(async move {
-                if let Err(e) = db::init_db(&handle).await {
-                    eprintln!("Database init failed: {}", e);
-                }
-            });
-            Ok(())
-        })
-        .invoke_handler(tauri::generate_handler![commands::import_word_list])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
-}
-```
-
-- [ ] **Step 4: 前端调用验证**
+- [ ] **Step 3: 前端调用验证**
 
 创建 `src/api/tauri.ts`：
 
@@ -794,7 +747,7 @@ async function importDefault() {
 </script>
 ```
 
-- [ ] **Step 5: 运行并验证导入**
+- [ ] **Step 4: 运行并验证导入**
 
 Run:
 ```bash
@@ -802,7 +755,7 @@ cd D:/HL/word-reciter && npm run tauri:dev
 ```
 在首页点击“导入默认词库”，Expected: 显示 `导入 9411 个，跳过 0 个`。再次点击应显示 `导入 0 个，跳过 9411 个`。
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 cd D:/HL/word-reciter
@@ -833,7 +786,6 @@ git commit -m "feat(import): import word list from txt into SQLite"
 
 ```rust
 use serde::Serialize;
-use tauri_plugin_sql::DbInstance;
 
 #[derive(Debug, Serialize)]
 pub struct Stats {
@@ -843,32 +795,29 @@ pub struct Stats {
     pub known: i64,
 }
 
-pub async fn get_stats(db: &DbInstance) -> Result<Stats, String> {
-    let total_rows = db
-        .select("SELECT COUNT(*) AS c FROM words", Vec::new())
-        .await
+pub fn get_stats(conn: &rusqlite::Connection) -> Result<Stats, String> {
+    let total: i64 = conn
+        .query_row("SELECT COUNT(*) FROM words", [], |row| row.get(0))
         .map_err(|e| e.to_string())?;
-    let total = total_rows[0]
-        .get("c")
-        .and_then(|v| v.as_i64())
-        .unwrap_or(0);
 
     let mut unknown = 0i64;
     let mut half = 0i64;
     let mut known = 0i64;
 
-    let rows = db
-        .select(
-            "SELECT familiarity, COUNT(*) AS c FROM word_states GROUP BY familiarity",
-            Vec::new(),
-        )
-        .await
+    let mut stmt = conn
+        .prepare("SELECT familiarity, COUNT(*) FROM word_states GROUP BY familiarity")
+        .map_err(|e| e.to_string())?;
+    let rows = stmt
+        .query_map([], |row| {
+            let familiarity: String = row.get(0)?;
+            let count: i64 = row.get(1)?;
+            Ok((familiarity, count))
+        })
         .map_err(|e| e.to_string())?;
 
     for row in rows {
-        let fam = row.get("familiarity").and_then(|v| v.as_str()).unwrap_or("");
-        let count = row.get("c").and_then(|v| v.as_i64()).unwrap_or(0);
-        match fam {
+        let (fam, count) = row.map_err(|e| e.to_string())?;
+        match fam.as_str() {
             "unknown" => unknown = count,
             "half" => half = count,
             "known" => known = count,
@@ -884,8 +833,8 @@ pub async fn get_stats(db: &DbInstance) -> Result<Stats, String> {
     })
 }
 
-pub async fn mark_word(
-    db: &DbInstance,
+pub fn mark_word(
+    conn: &rusqlite::Connection,
     word: &str,
     familiarity: &str,
 ) -> Result<(), String> {
@@ -896,8 +845,7 @@ pub async fn mark_word(
             familiarity = excluded.familiarity,
             updated_at = CURRENT_TIMESTAMP
     "#;
-    db.execute(sql, vec![word.into(), familiarity.into()])
-        .await
+    conn.execute(sql, rusqlite::params![word, familiarity])
         .map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -906,10 +854,8 @@ pub async fn mark_word(
 创建 `src-tauri/src/db/study_logs.rs`：
 
 ```rust
-use tauri_plugin_sql::DbInstance;
-
-pub async fn log_study(
-    db: &DbInstance,
+pub fn log_study(
+    conn: &rusqlite::Connection,
     word: &str,
     quiz_type: &str,
     result: &str,
@@ -919,16 +865,10 @@ pub async fn log_study(
         INSERT INTO study_logs (word_id, quiz_type, result, familiarity_after)
         VALUES ((SELECT id FROM words WHERE word = ?), ?, ?, ?)
     "#;
-    db.execute(
+    conn.execute(
         sql,
-        vec![
-            word.into(),
-            quiz_type.into(),
-            result.into(),
-            familiarity_after.into(),
-        ],
+        rusqlite::params![word, quiz_type, result, familiarity_after],
     )
-    .await
     .map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -954,8 +894,9 @@ use crate::db::word_states::Stats;
 
 #[tauri::command]
 pub async fn get_stats(app: AppHandle) -> Result<Stats, String> {
-    let db = app.sqlite("word_reciter.db").map_err(|e| e.to_string())?;
-    db::word_states::get_stats(&db).await
+    let path = crate::db::db_path(&app)?;
+    let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+    db::word_states::get_stats(&conn)
 }
 ```
 
@@ -1199,8 +1140,8 @@ git commit -m "feat(home): implement stats dashboard and mode entry points"
 修改 `src-tauri/src/db/words.rs`：
 
 ```rust
+use rusqlite::OptionalExtension;
 use serde::Serialize;
-use tauri_plugin_sql::DbInstance;
 
 #[derive(Debug, Serialize)]
 pub struct Word {
@@ -1210,9 +1151,9 @@ pub struct Word {
     pub meaning: Option<String>,
 }
 
-pub async fn get_next_unmarked(db: &DbInstance, offset: i64) -> Result<Option<Word>, String> {
-    let rows = db
-        .select(
+pub fn get_next_unmarked(conn: &rusqlite::Connection, offset: i64) -> Result<Option<Word>, String> {
+    let mut stmt = conn
+        .prepare(
             r#"
             SELECT w.id, w.word, w.source, w.meaning
             FROM words w
@@ -1221,22 +1162,22 @@ pub async fn get_next_unmarked(db: &DbInstance, offset: i64) -> Result<Option<Wo
             ORDER BY w.id
             LIMIT 1 OFFSET ?
             "#,
-            vec![offset.into()],
         )
-        .await
         .map_err(|e| e.to_string())?;
 
-    if rows.is_empty() {
-        return Ok(None);
-    }
+    let word = stmt
+        .query_row(rusqlite::params![offset], |row| {
+            Ok(Word {
+                id: row.get(0)?,
+                word: row.get(1)?,
+                source: row.get(2)?,
+                meaning: row.get(3)?,
+            })
+        })
+        .optional()
+        .map_err(|e| e.to_string())?;
 
-    let row = &rows[0];
-    Ok(Some(Word {
-        id: row.get("id").and_then(|v| v.as_i64()).unwrap_or(0),
-        word: row.get("word").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-        source: row.get("source").and_then(|v| v.as_str()).map(|s| s.to_string()),
-        meaning: row.get("meaning").and_then(|v| v.as_str()).map(|s| s.to_string()),
-    }))
+    Ok(word)
 }
 ```
 
@@ -1253,8 +1194,9 @@ pub async fn get_next_unmarked_word(
     offset: i64,
     app: AppHandle,
 ) -> Result<Option<Word>, String> {
-    let db = app.sqlite("word_reciter.db").map_err(|e| e.to_string())?;
-    db::words::get_next_unmarked(&db, offset).await
+    let path = crate::db::db_path(&app)?;
+    let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+    db::words::get_next_unmarked(&conn, offset)
 }
 
 #[tauri::command]
@@ -1263,8 +1205,9 @@ pub async fn mark_word(
     familiarity: String,
     app: AppHandle,
 ) -> Result<(), String> {
-    let db = app.sqlite("word_reciter.db").map_err(|e| e.to_string())?;
-    db::word_states::mark_word(&db, &word, &familiarity).await
+    let path = crate::db::db_path(&app)?;
+    let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+    db::word_states::mark_word(&conn, &word, &familiarity)
 }
 ```
 
@@ -1455,9 +1398,9 @@ git commit -m "feat(marking): implement word classification mode"
 修改 `src-tauri/src/db/words.rs`，添加：
 
 ```rust
-pub async fn get_study_pool(db: &DbInstance) -> Result<Vec<Word>, String> {
-    let rows = db
-        .select(
+pub fn get_study_pool(conn: &rusqlite::Connection) -> Result<Vec<Word>, String> {
+    let mut stmt = conn
+        .prepare(
             r#"
             SELECT w.id, w.word, w.source, w.meaning
             FROM words w
@@ -1466,17 +1409,23 @@ pub async fn get_study_pool(db: &DbInstance) -> Result<Vec<Word>, String> {
               AND w.meaning IS NOT NULL
               AND TRIM(w.meaning) <> ''
             "#,
-            Vec::new(),
         )
-        .await
         .map_err(|e| e.to_string())?;
 
-    Ok(rows.into_iter().map(|row| Word {
-        id: row.get("id").and_then(|v| v.as_i64()).unwrap_or(0),
-        word: row.get("word").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-        source: row.get("source").and_then(|v| v.as_str()).map(|s| s.to_string()),
-        meaning: row.get("meaning").and_then(|v| v.as_str()).map(|s| s.to_string()),
-    }).collect())
+    let words = stmt
+        .query_map([], |row| {
+            Ok(Word {
+                id: row.get(0)?,
+                word: row.get(1)?,
+                source: row.get(2)?,
+                meaning: row.get(3)?,
+            })
+        })
+        .map_err(|e| e.to_string())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())?;
+
+    Ok(words)
 }
 ```
 
@@ -1585,8 +1534,9 @@ pub struct StudyResultPayload {
 
 #[tauri::command]
 pub async fn generate_quiz(app: AppHandle) -> Result<Option<Quiz>, String> {
-    let db = app.sqlite("word_reciter.db").map_err(|e| e.to_string())?;
-    let pool = db::words::get_study_pool(&db).await?;
+    let path = crate::db::db_path(&app)?;
+    let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+    let pool = db::words::get_study_pool(&conn)?;
     Ok(study::generate_quiz(&pool))
 }
 
@@ -1595,16 +1545,16 @@ pub async fn submit_study_result(
     payload: StudyResultPayload,
     app: AppHandle,
 ) -> Result<(), String> {
-    let db = app.sqlite("word_reciter.db").map_err(|e| e.to_string())?;
-    db::word_states::mark_word(&db, &payload.word, &payload.familiarity_after).await?;
+    let path = crate::db::db_path(&app)?;
+    let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+    db::word_states::mark_word(&conn, &payload.word, &payload.familiarity_after)?;
     db::study_logs::log_study(
-        &db,
+        &conn,
         &payload.word,
         &payload.quiz_type,
         &payload.result,
         &payload.familiarity_after,
-    )
-    .await?;
+    )?;
     Ok(())
 }
 ```
