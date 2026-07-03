@@ -1,45 +1,54 @@
 use std::path::PathBuf;
 
-use tauri::{command, path::BaseDirectory, AppHandle, Manager};
+use tauri::{command, path::BaseDirectory, AppHandle, Manager, State};
 
 use crate::db;
 use crate::db::word_states::Stats;
 use crate::db::words::Word;
 use crate::services::study::{self, Quiz};
 use crate::services::word_import::{self, ImportResult};
+use crate::AppState;
 
-/// Resolves a word-list path in a deterministic order.
+/// Name of the bundled default word list. The backend never trusts the frontend
+/// path and always resolves this file from known-safe locations.
+const DEFAULT_WORD_LIST_FILE: &str = "unique_words_with_chinese.txt";
+
+/// Resolves the default word-list path from a known-safe location.
 ///
-/// 1. Absolute paths are returned unchanged.
-/// 2. Bundled resources are checked first (works in packaged apps).
-/// 3. The path is resolved relative to the current working directory for dev
-///    convenience. During `cargo run`/`tauri dev` the binary runs from
-///    `src-tauri/target/debug`, so the cwd is `src-tauri` and a relative path
-///    like `references/unique_words_with_chinese.txt` points there.
-/// 4. The project-root version (`../<path>`) is tried as a final fallback.
+/// * Rejects absolute paths, paths containing `..`, and filenames that do not
+///   match [`DEFAULT_WORD_LIST_FILE`].
+/// * In production/bundled builds, resolves the file inside the resource
+///   directory (`BaseDirectory::Resource`).
+/// * In development, also allows resolving the file relative to the project
+///   root (`src-tauri/..`) for convenience when running `cargo run`/`tauri dev`.
 fn resolve_word_list_path(path: &str, app: &AppHandle) -> Result<PathBuf, String> {
     let p = PathBuf::from(path);
+
+    // Only plain relative references to the default filename are accepted.
     if p.is_absolute() {
-        return Ok(p);
+        return Err("absolute word list paths are not allowed".into());
+    }
+    if p.components().any(|c| matches!(c, std::path::Component::ParentDir)) {
+        return Err("word list path cannot contain '..'".into());
+    }
+    if p.file_name().and_then(|n| n.to_str()) != Some(DEFAULT_WORD_LIST_FILE) {
+        return Err(format!(
+            "only the default word list '{}' is allowed",
+            DEFAULT_WORD_LIST_FILE
+        ));
     }
 
     // 1. Try bundled resources (production builds).
-    if let Ok(resource_path) = app.path().resolve(&p, BaseDirectory::Resource) {
+    if let Ok(resource_path) = app.path().resolve(path, BaseDirectory::Resource) {
         if resource_path.exists() {
             return Ok(resource_path);
         }
     }
 
-    // 2. Resolve relative to the current working directory (dev convenience).
-    if let Ok(cwd) = std::env::current_dir() {
-        let cwd_relative = cwd.join(&p);
-        if cwd_relative.exists() {
-            return Ok(cwd_relative);
-        }
-    }
-
-    // 3. Fall back to project root (when cwd is `src-tauri`).
-    let from_project_root = PathBuf::from("..").join(&p);
+    // 2. Dev fallback: resolve relative to the project root. When running
+    //    `cargo run`/`tauri dev`, the cwd is `src-tauri`, so the reference file
+    //    is at `../references/<path>`.
+    let from_project_root = PathBuf::from("..").join(path);
     if from_project_root.exists() {
         return Ok(from_project_root);
     }
@@ -47,19 +56,43 @@ fn resolve_word_list_path(path: &str, app: &AppHandle) -> Result<PathBuf, String
     Err(format!("Word list file not found: {}", path))
 }
 
-/// Imports a word list from a text file into the application's SQLite database.
+/// Returns an error if the database has not finished initializing or if it
+/// failed to initialize.
+fn check_db_ready(state: &State<'_, AppState>) -> Result<(), String> {
+    if !state.is_complete() {
+        return Err("Database is still initializing".into());
+    }
+    if let Some(err) = state.error() {
+        return Err(err);
+    }
+    Ok(())
+}
+
+/// Imports the default word list from the bundled resource directory.
 ///
-/// The file is expected to contain one `word|meaning` pair per line. The
-/// `source` value is stored alongside each imported word for provenance.
+/// The `path` argument is ignored; the backend always resolves the known-safe
+/// default reference file. The `source` value is stored alongside each imported
+/// word for provenance.
 #[command]
-pub async fn import_word_list(path: String, source: String, app: AppHandle) -> Result<ImportResult, String> {
+pub async fn import_word_list(
+    _path: String,
+    source: String,
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<ImportResult, String> {
+    check_db_ready(&state)?;
     let db_path = db::db_path(&app)?;
-    let resolved_path = resolve_word_list_path(&path, &app)?;
+    // Always use the safe default relative path inside the resource directory.
+    let resolved_path = resolve_word_list_path(
+        &format!("references/{}", DEFAULT_WORD_LIST_FILE),
+        &app,
+    )?;
 
     tokio::task::spawn_blocking(move || {
         let mut conn = db::open_connection(&db_path)
             .map_err(|e| format!("Failed to open database at {:?}: {}", db_path, e))?;
-        word_import::import_from_txt(&mut conn,
+        word_import::import_from_txt(
+            &mut conn,
             resolved_path.to_string_lossy().as_ref(),
             &source,
         )
@@ -69,7 +102,8 @@ pub async fn import_word_list(path: String, source: String, app: AppHandle) -> R
 }
 
 #[command]
-pub async fn get_stats(app: AppHandle) -> Result<Stats, String> {
+pub async fn get_stats(app: AppHandle, state: State<'_, AppState>) -> Result<Stats, String> {
+    check_db_ready(&state)?;
     let path = crate::db::db_path(&app)?;
     tokio::task::spawn_blocking(move || {
         let conn = db::open_connection(&path).map_err(|e| e.to_string())?;
@@ -83,7 +117,9 @@ pub async fn get_stats(app: AppHandle) -> Result<Stats, String> {
 pub async fn get_next_unmarked_word(
     offset: i64,
     app: AppHandle,
+    state: State<'_, AppState>,
 ) -> Result<Option<Word>, String> {
+    check_db_ready(&state)?;
     if offset < 0 {
         return Err("offset cannot be negative".into());
     }
@@ -101,7 +137,9 @@ pub async fn mark_word(
     word: String,
     familiarity: String,
     app: AppHandle,
+    state: State<'_, AppState>,
 ) -> Result<(), String> {
+    check_db_ready(&state)?;
     let path = crate::db::db_path(&app)?;
     tokio::task::spawn_blocking(move || {
         let conn = db::open_connection(&path).map_err(|e| e.to_string())?;
@@ -120,7 +158,11 @@ pub struct StudyResultPayload {
 }
 
 #[command]
-pub async fn generate_quiz(app: AppHandle) -> Result<Option<Quiz>, String> {
+pub async fn generate_quiz(
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<Option<Quiz>, String> {
+    check_db_ready(&state)?;
     let path = crate::db::db_path(&app)?;
     tokio::task::spawn_blocking(move || {
         let conn = db::open_connection(&path).map_err(|e| e.to_string())?;
@@ -135,7 +177,9 @@ pub async fn generate_quiz(app: AppHandle) -> Result<Option<Quiz>, String> {
 pub async fn submit_study_result(
     payload: StudyResultPayload,
     app: AppHandle,
+    state: State<'_, AppState>,
 ) -> Result<(), String> {
+    check_db_ready(&state)?;
     let path = crate::db::db_path(&app)?;
     tokio::task::spawn_blocking(move || {
         let mut conn = db::open_connection(&path).map_err(|e| e.to_string())?;

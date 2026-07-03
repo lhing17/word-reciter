@@ -41,10 +41,7 @@ describe('useWordsStore', () => {
     const store = useWordsStore()
     await store.ensureDefaultWordListImported()
 
-    expect(tauri.importWordList).toHaveBeenCalledWith(
-      'references/unique_words_with_chinese.txt',
-      'unique_words_with_chinese.txt'
-    )
+    expect(tauri.importWordList).toHaveBeenCalledWith('unique_words_with_chinese.txt')
     expect(tauri.getStats).toHaveBeenCalledTimes(1)
     expect(store.stats).toEqual({ total: 5, unknown: 5, half: 0, known: 0 })
   })

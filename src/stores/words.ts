@@ -15,7 +15,7 @@ export const useWordsStore = defineStore('words', () => {
     if (importPromise) return importPromise
 
     importPromise = (async () => {
-      await importWordList('references/unique_words_with_chinese.txt', 'unique_words_with_chinese.txt')
+      await importWordList('unique_words_with_chinese.txt')
       await loadStats()
     })().finally(() => {
       importPromise = null
