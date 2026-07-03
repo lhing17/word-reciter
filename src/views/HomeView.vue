@@ -1,20 +1,93 @@
 <template>
-  <div style="padding: 24px">
+  <div class="home">
     <h1>Word Reciter</h1>
-    <button @click="importDefault">导入默认词库</button>
-    <p v-if="result">导入 {{ result.imported }} 个，跳过 {{ result.skipped }} 个</p>
-    <router-link to="/marking">分类模式</router-link>
-    <router-link to="/study">背诵模式</router-link>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="number">{{ wordsStore.stats.total }}</div>
+        <div class="label">总单词</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">{{ wordsStore.stats.unknown }}</div>
+        <div class="label">生词</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">{{ wordsStore.stats.half }}</div>
+        <div class="label">半熟词</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">{{ wordsStore.stats.known }}</div>
+        <div class="label">熟词</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <router-link class="btn" to="/marking">开始分类模式</router-link>
+      <router-link class="btn" to="/study">开始背诵模式</router-link>
+    </div>
+
+    <p class="hint">当前词库：朗文 9000 词</p>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { importWordList, type ImportResult } from '../api/tauri'
+import { onMounted } from 'vue'
+import { useWordsStore } from '../stores/words'
 
-const result = ref<ImportResult | null>(null)
+const wordsStore = useWordsStore()
 
-async function importDefault() {
-  result.value = await importWordList('references/unique_words_with_chinese.txt', 'unique_words_with_chinese.txt')
-}
+onMounted(async () => {
+  await wordsStore.ensureDefaultWordListImported()
+})
 </script>
+
+<style scoped>
+.home {
+  padding: 32px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 24px 0;
+}
+.stat-card {
+  background: #f5f5f5;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.number {
+  font-size: 24px;
+  font-weight: bold;
+}
+.label {
+  color: #666;
+  font-size: 14px;
+  margin-top: 4px;
+}
+.actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 24px;
+}
+.btn {
+  flex: 1;
+  display: block;
+  text-align: center;
+  padding: 12px;
+  background: #1976d2;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+.hint {
+  color: #999;
+  margin-top: 24px;
+  text-align: center;
+}
+</style>

@@ -1,6 +1,7 @@
 use tauri::{command, AppHandle};
 
 use crate::db;
+use crate::db::word_states::Stats;
 use crate::services::word_import::{self, ImportResult};
 
 /// Imports a word list from a text file into the application's SQLite database.
@@ -18,4 +19,11 @@ pub async fn import_word_list(path: String, source: String, app: AppHandle) -> R
     })
     .await
     .map_err(|e| e.to_string())?
+}
+
+#[command]
+pub async fn get_stats(app: AppHandle) -> Result<Stats, String> {
+    let path = crate::db::db_path(&app)?;
+    let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+    db::word_states::get_stats(&conn)
 }

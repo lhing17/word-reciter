@@ -3,6 +3,8 @@ use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
 pub mod migrations;
+pub mod study_logs;
+pub mod word_states;
 
 /// Returns the path to the SQLite database file.
 pub fn db_path(app: &AppHandle) -> Result<PathBuf, String> {
