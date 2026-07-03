@@ -17,11 +17,15 @@ pub struct ImportResult {
 /// empty after trimming are ignored.
 ///
 /// Words already present in the `words` table are skipped (`INSERT OR IGNORE`).
-pub fn import_from_txt(conn: &Connection, path: &str, source: &str) -> Result<ImportResult, String> {
+pub fn import_from_txt(conn: &mut Connection, path: &str, source: &str) -> Result<ImportResult, String> {
     let file = fs::File::open(path).map_err(|e| format!("Failed to open {}: {}", path, e))?;
     let reader = BufReader::new(file);
 
-    let mut stmt = conn
+    let tx = conn
+        .transaction()
+        .map_err(|e| format!("Failed to start transaction: {}", e))?;
+
+    let mut stmt = tx
         .prepare("INSERT OR IGNORE INTO words (word, source, meaning) VALUES (?, ?, ?)")
         .map_err(|e| format!("Failed to prepare insert statement: {}", e))?;
 
@@ -55,6 +59,10 @@ pub fn import_from_txt(conn: &Connection, path: &str, source: &str) -> Result<Im
         }
     }
 
+    drop(stmt);
+    tx.commit()
+        .map_err(|e| format!("Failed to commit transaction: {}", e))?;
+
     Ok(ImportResult { imported, skipped })
 }
 
@@ -66,11 +74,11 @@ mod tests {
 
     #[test]
     fn imports_default_reference_file() {
-        let conn = Connection::open_in_memory().unwrap();
+        let mut conn = Connection::open_in_memory().unwrap();
         conn.execute_batch(MIGRATIONS).unwrap();
 
         let result = import_from_txt(
-            &conn,
+            &mut conn,
             "../references/unique_words_with_chinese.txt",
             "unique_words_with_chinese.txt",
         )
@@ -80,7 +88,7 @@ mod tests {
         assert_eq!(result.skipped, 0);
 
         let second = import_from_txt(
-            &conn,
+            &mut conn,
             "../references/unique_words_with_chinese.txt",
             "unique_words_with_chinese.txt",
         )
@@ -104,11 +112,11 @@ mod tests {
             writeln!(file, "   ").unwrap();
         }
 
-        let conn = Connection::open_in_memory().unwrap();
+        let mut conn = Connection::open_in_memory().unwrap();
         conn.execute_batch(MIGRATIONS).unwrap();
 
         let first = import_from_txt(
-            &conn,
+            &mut conn,
             file_path.to_str().unwrap(),
             "test-source",
         )
@@ -117,7 +125,7 @@ mod tests {
         assert_eq!(first.skipped, 1);
 
         let second = import_from_txt(
-            &conn,
+            &mut conn,
             file_path.to_str().unwrap(),
             "test-source",
         )

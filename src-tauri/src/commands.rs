@@ -12,9 +12,9 @@ pub async fn import_word_list(path: String, source: String, app: AppHandle) -> R
     let db_path = db::db_path(&app)?;
 
     tokio::task::spawn_blocking(move || {
-        let conn = rusqlite::Connection::open(&db_path)
+        let mut conn = rusqlite::Connection::open(&db_path)
             .map_err(|e| format!("Failed to open database at {:?}: {}", db_path, e))?;
-        word_import::import_from_txt(&conn, &path, &source)
+        word_import::import_from_txt(&mut conn, &path, &source)
     })
     .await
     .map_err(|e| e.to_string())?
