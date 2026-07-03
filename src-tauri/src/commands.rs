@@ -3,6 +3,7 @@ use tauri::{command, AppHandle};
 use crate::db;
 use crate::db::word_states::Stats;
 use crate::db::words::Word;
+use crate::services::study::{self, Quiz};
 use crate::services::word_import::{self, ImportResult};
 
 /// Imports a word list from a text file into the application's SQLite database.
@@ -57,6 +58,48 @@ pub async fn mark_word(
     tokio::task::spawn_blocking(move || {
         let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
         db::word_states::mark_word(&conn, &word, &familiarity)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[derive(serde::Deserialize)]
+pub struct StudyResultPayload {
+    pub word: String,
+    pub quiz_type: String,
+    pub result: String,
+    pub familiarity_after: String,
+}
+
+#[command]
+pub async fn generate_quiz(app: AppHandle) -> Result<Option<Quiz>, String> {
+    let path = crate::db::db_path(&app)?;
+    tokio::task::spawn_blocking(move || {
+        let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+        let pool = db::words::get_study_pool(&conn)?;
+        Ok(study::generate_quiz(&pool))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[command]
+pub async fn submit_study_result(
+    payload: StudyResultPayload,
+    app: AppHandle,
+) -> Result<(), String> {
+    let path = crate::db::db_path(&app)?;
+    tokio::task::spawn_blocking(move || {
+        let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+        db::word_states::mark_word(&conn, &payload.word, &payload.familiarity_after)?;
+        db::study_logs::log_study(
+            &conn,
+            &payload.word,
+            &payload.quiz_type,
+            &payload.result,
+            &payload.familiarity_after,
+        )?;
+        Ok(())
     })
     .await
     .map_err(|e| e.to_string())?

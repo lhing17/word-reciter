@@ -19,6 +19,8 @@ pub fn run() {
             commands::get_stats,
             commands::get_next_unmarked_word,
             commands::mark_word,
+            commands::generate_quiz,
+            commands::submit_study_result,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
